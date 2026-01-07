@@ -37,6 +37,11 @@ public class MpCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("mp.admin")) {
+            sender.sendMessage("You do not have permission to use ModPanel commands.");
+            return true;
+        }
+
         if (args.length == 0) {
             sender.sendMessage("Usage: /mp <reload|help>");
             return true;
@@ -46,7 +51,7 @@ public class MpCommand implements CommandExecutor, TabCompleter {
 
         switch (subCommand) {
             case "reload":
-                if (!sender.isOp()) {
+                if (!sender.hasPermission("mp.admin")) {
                     sender.sendMessage("You do not have permission to reload ModPanel.");
                     return true;
                 }
