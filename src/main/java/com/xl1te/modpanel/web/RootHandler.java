@@ -10,12 +10,15 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class RootHandler implements HttpHandler {
     private ColoredLogger logger;
     private boolean ipWhitelistEnabled;
     private List<String> ipWhitelist;
     private DatabaseManager databaseManager;
+    private final Map<String, String> htmlCache = new HashMap<>();
 
     public RootHandler(ColoredLogger logger, boolean ipWhitelistEnabled, List<String> ipWhitelist,
             DatabaseManager databaseManager) {
@@ -23,6 +26,18 @@ public class RootHandler implements HttpHandler {
         this.ipWhitelistEnabled = ipWhitelistEnabled;
         this.ipWhitelist = ipWhitelist;
         this.databaseManager = databaseManager;
+
+        // Pre-load and cache pages
+        preloadPages();
+    }
+
+    private void preloadPages() {
+        htmlCache.put("/pages/index.html", loadHtmlPage("/pages/index.html"));
+        htmlCache.put("/pages/403.html", loadHtmlPage("/pages/403.html"));
+    }
+
+    private String getCachedPage(String path) {
+        return htmlCache.getOrDefault(path, "<h1>Error</h1><p>Page not found.</p>");
     }
 
     private String loadHtmlPage(String path) {

@@ -10,12 +10,15 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class InventoryPageHandler implements HttpHandler {
     private ColoredLogger logger;
     private boolean ipWhitelistEnabled;
     private List<String> ipWhitelist;
     private DatabaseManager databaseManager;
+    private final Map<String, String> htmlCache = new HashMap<>();
 
     public InventoryPageHandler(ColoredLogger logger, boolean ipWhitelistEnabled, List<String> ipWhitelist,
             DatabaseManager databaseManager) {
@@ -23,6 +26,18 @@ public class InventoryPageHandler implements HttpHandler {
         this.ipWhitelistEnabled = ipWhitelistEnabled;
         this.ipWhitelist = ipWhitelist;
         this.databaseManager = databaseManager;
+
+        // Pre-load and cache pages
+        preloadPages();
+    }
+
+    private void preloadPages() {
+        htmlCache.put("/pages/inventory.html", loadHtmlPage("/pages/inventory.html"));
+        htmlCache.put("/pages/403.html", loadHtmlPage("/pages/403.html"));
+    }
+
+    private String getCachedPage(String path) {
+        return htmlCache.getOrDefault(path, "<h1>Error</h1><p>Page not found.</p>");
     }
 
     private String loadHtmlPage(String path) {
@@ -44,7 +59,7 @@ public class InventoryPageHandler implements HttpHandler {
         boolean allowed = true;
         if (ipWhitelistEnabled && !ipWhitelist.contains(clientIP)) {
             allowed = false;
-            String response = loadHtmlPage("/pages/403.html");
+            String response = getCachedPage("/pages/403.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(403, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();
@@ -52,7 +67,7 @@ public class InventoryPageHandler implements HttpHandler {
             os.close();
             logger.warning("Blocked inventory page access from non-whitelisted IP: " + clientIP);
         } else {
-            String response = loadHtmlPage("/pages/inventory.html");
+            String response = getCachedPage("/pages/inventory.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();
