@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.entity.Player;
@@ -41,10 +42,18 @@ public class PlayersApiHandler implements HttpHandler {
             t.getResponseBody().close();
             logger.warning("Blocked API access from non-whitelisted IP: " + clientIP);
         } else {
-            // Get online players
+            // Get online players safely on the main thread
             Set<String> onlineUUIDs = new HashSet<>();
-            for (Player player : plugin.getServer().getOnlinePlayers()) {
-                onlineUUIDs.add(player.getUniqueId().toString());
+            try {
+                onlineUUIDs = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
+                    Set<String> uuids = new HashSet<>();
+                    for (Player player : plugin.getServer().getOnlinePlayers()) {
+                        uuids.add(player.getUniqueId().toString());
+                    }
+                    return uuids;
+                }).get();
+            } catch (InterruptedException | ExecutionException e) {
+                logger.warning("Failed to get online players on main thread: " + e.getMessage());
             }
 
             // Get all players from DB

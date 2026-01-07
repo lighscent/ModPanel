@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.entity.Player;
@@ -88,20 +90,36 @@ public class MoveItemApiHandler implements HttpHandler {
                 os.write(response.getBytes(StandardCharsets.UTF_8));
                 os.close();
             } else {
-                // Find the player
-                Player targetPlayer = null;
-                String playerUUID = null;
-                for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-                    if (onlinePlayer.getName().equals(playerName)) {
-                        targetPlayer = onlinePlayer;
-                        playerUUID = onlinePlayer.getUniqueId().toString();
-                        break;
-                    }
-                }
+                // Perform movement safely on the main thread
+                final String finalPlayerName = playerName;
+                final int finalFromSlot = fromSlot;
+                final int finalToSlot = toSlot;
 
-                // If player is offline, get their UUID from database
-                if (targetPlayer == null) {
+                boolean success = false;
+                String playerUUID = null;
+
+                try {
+                    success = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
+                        Player target = null;
+                        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
+                            if (onlinePlayer.getName().equals(finalPlayerName)) {
+                                target = onlinePlayer;
+                                break;
+                            }
+                        }
+
+                        String uuid = (target != null) ? target.getUniqueId().toString()
+                                : databaseManager.getPlayerUUID(finalPlayerName);
+                        if (uuid == null)
+                            return false;
+
+                        return inventoryUtils.moveItemInInventory(uuid, finalFromSlot, finalToSlot, target);
+                    }).get();
+
+                    // Re-check if player exists for the error response
                     playerUUID = databaseManager.getPlayerUUID(playerName);
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.warning("Failed to move item on main thread: " + e.getMessage());
                 }
 
                 if (playerUUID == null) {
@@ -112,9 +130,6 @@ public class MoveItemApiHandler implements HttpHandler {
                     os.write(response.getBytes(StandardCharsets.UTF_8));
                     os.close();
                 } else {
-                    // Move item - works for both online and offline players
-                    boolean success = inventoryUtils.moveItemInInventory(playerUUID, fromSlot, toSlot, targetPlayer);
-
                     String response = success ? "{\"success\":true}"
                             : "{\"success\":false,\"error\":\"Invalid slot or item movement\"}";
                     t.getResponseHeaders().set("Content-Type", "application/json");

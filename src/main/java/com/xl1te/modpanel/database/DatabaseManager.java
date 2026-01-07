@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import com.xl1te.modpanel.utils.ColoredLogger;
 import org.bukkit.inventory.ItemStack;

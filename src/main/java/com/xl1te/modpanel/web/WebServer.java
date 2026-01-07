@@ -51,10 +51,8 @@ public class WebServer {
 
             server.start();
             logger.info("ModPanel Web Server started on port " + port);
-        } catch (
-
-        IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            logger.severe("Failed to start ModPanel Web Server on port " + port + ": " + e.getMessage());
         }
     }
 

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.entity.Player;
@@ -65,25 +66,41 @@ public class InventoryApiHandler implements HttpHandler {
                 os.write(response.getBytes(StandardCharsets.UTF_8));
                 os.close();
             } else {
-                // Find the player
-                Player targetPlayer = null;
-                for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-                    if (onlinePlayer.getName().equals(playerName)) {
-                        targetPlayer = onlinePlayer;
-                        break;
-                    }
+                // Find and serialize inventory safely on the main thread
+                final String finalPlayerName = playerName;
+                String inventoryJson = null;
+                boolean isOnline = false;
+
+                try {
+                    inventoryJson = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
+                        Player target = null;
+                        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
+                            if (onlinePlayer.getName().equals(finalPlayerName)) {
+                                target = onlinePlayer;
+                                break;
+                            }
+                        }
+
+                        if (target != null) {
+                            return inventoryUtils.serializeInventoryJson(target.getInventory());
+                        }
+                        return null;
+                    }).get();
+                    if (inventoryJson != null)
+                        isOnline = true;
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.warning("Failed to get player inventory on main thread: " + e.getMessage());
                 }
 
                 StringBuilder json = new StringBuilder();
                 json.append("{");
 
-                if (targetPlayer != null) {
+                if (isOnline) {
                     // Player is online, get their current inventory
-                    json.append("\"player\":{\"name\":\"").append(targetPlayer.getName())
+                    json.append("\"player\":{\"name\":\"").append(playerName)
                             .append("\",\"online\":true},");
                     json.append("\"inventory\":");
-
-                    json.append(inventoryUtils.serializeInventoryJson(targetPlayer.getInventory()));
+                    json.append(inventoryJson);
                 } else {
                     // Player is offline, load inventory from database
                     String playerUUID = databaseManager.getPlayerUUID(playerName);
