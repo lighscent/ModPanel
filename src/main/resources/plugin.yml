@@ -10,3 +10,8 @@ commands:
     description: ModPanel commands
     usage: /<command> reload
     aliases: [modpanel]
+    permission: mp.admin
+permissions:
+  mp.admin:
+    description: Allows access to ModPanel admin commands
+    default: op
