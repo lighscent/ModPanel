@@ -1,0 +1,9 @@
+# DO NOT TOUCH THIS!!!
+config-version: 1
+
+### Web Server Settings ###
+server-port: 9999
+ip-whitelist-enabled: true
+ip-whitelist:
+  - "127.0.0.1"
+  - "0.0.0.0"

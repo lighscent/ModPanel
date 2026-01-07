@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ModPanel - Home</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      /* --- General Reset & Typography --- */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: #f4f6f8;
+        color: #333;
+        height: 100vh;
+        display: flex;
+        justify-content: flex-start;
+        align-items: stretch;
+        padding: 0;
+      }
+
+      /* --- Dark Mode Support --- */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #121212;
+          color: #e0e0e0;
+        }
+      }
+
+      .sidebar {
+        width: 300px;
+        background-color: #fff;
+        border-right: 1px solid #ddd;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .sidebar {
+          background-color: #1e1e1e;
+          border-right: 1px solid #333;
+        }
+      }
+
+      .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .sidebar-header h2 {
+        margin: 0;
+      }
+
+      .refresh-icon-btn {
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 3px;
+        transition: all 0.2s;
+      }
+
+      .refresh-icon-btn:hover {
+        background-color: #f0f0f0;
+        color: #333;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .refresh-icon-btn {
+          color: #ccc;
+        }
+        .refresh-icon-btn:hover {
+          background-color: #333;
+          color: #fff;
+        }
+      }
+
+      .players-spacer {
+        height: 15px;
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 20px;
+      }
+
+      .player-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .player-item {
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+        display: flex;
+        align-items: center;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .player-item {
+          background-color: #2a2a2a;
+        }
+      }
+
+      .player-head {
+        width: 32px;
+        height: 32px;
+        border-radius: 3px;
+        margin-right: 10px;
+        background-color: #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #666;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .player-head {
+          background-color: #444;
+          color: #ccc;
+        }
+      }
+
+      .player-online {
+        border-left: 4px solid #4caf50;
+      }
+
+      .player-offline {
+        border-left: 4px solid #ccc;
+      }
+
+      .player-name {
+        font-weight: bold;
+      }
+
+      .player-name.clickable:hover {
+        text-decoration: underline;
+        color: #007bff;
+      }
+
+      .player-status {
+        margin-left: auto;
+        font-size: 0.8em;
+        color: #666;
+      }
+
+      .online {
+        color: #4caf50;
+      }
+
+      .offline {
+        color: #ccc;
+      }
+
+      .sidebar-footer {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .sidebar-footer {
+          border-top: 1px solid #333;
+        }
+      }
+
+      .countdown {
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .countdown {
+          color: #ccc;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Players</h2>
+        <button id="refresh-btn" class="refresh-icon-btn" title="Refresh Now">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+      <div class="players-spacer"></div>
+      <ul id="player-list" class="player-list">
+        <!-- Players will be loaded here -->
+      </ul>
+      <div class="sidebar-footer">
+        <div class="countdown">
+          Auto-refresh in: <span id="countdown-timer">60</span>s
+        </div>
+      </div>
+    </div>
+    <div class="main-content">
+      <h1>Welcome to ModPanel</h1>
+      <p>This is the main content area.</p>
+    </div>
+
+    <script>
+      let countdownInterval;
+      let timeLeft = 60;
+
+      async function loadPlayers() {
+        try {
+          const response = await fetch("/api/players");
+          const players = await response.json();
+          const playerList = document.getElementById("player-list");
+
+          // Clear existing list
+          playerList.innerHTML = "";
+
+          players.forEach((player) => {
+            const li = document.createElement("li");
+            li.className = `player-item ${
+              player.online ? "player-online" : "player-offline"
+            }`;
+
+            // Player head
+            const headDiv = document.createElement("div");
+            headDiv.className = "player-head";
+            const headImg = document.createElement("img");
+            headImg.src = `https://cravatar.eu/avatar/${player.uuid}/32.png`;
+            headImg.alt = `${player.name}'s head`;
+            headImg.style.width = "32px";
+            headImg.style.height = "32px";
+            headImg.style.borderRadius = "3px";
+            headImg.onerror = function () {
+              // Fallback to default head if image fails to load
+              headDiv.innerHTML = '<i class="fas fa-user"></i>';
+            };
+            headDiv.appendChild(headImg);
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "player-name clickable";
+            nameSpan.textContent = player.name;
+            nameSpan.style.cursor = "pointer";
+            nameSpan.onclick = function () {
+              window.location.href = `/inventory.html?player=${encodeURIComponent(
+                player.name
+              )}&uuid=${player.uuid}`;
+            };
+
+            const statusSpan = document.createElement("span");
+            statusSpan.className = `player-status ${
+              player.online ? "online" : "offline"
+            }`;
+            statusSpan.textContent = player.online ? "Online" : "Offline";
+
+            li.appendChild(headDiv);
+            li.appendChild(nameSpan);
+            li.appendChild(statusSpan);
+            playerList.appendChild(li);
+          });
+        } catch (error) {
+          console.error("Failed to load players:", error);
+          const playerList = document.getElementById("player-list");
+          playerList.innerHTML =
+            '<li class="player-item">Failed to load players</li>';
+        }
+      }
+
+      function startCountdown() {
+        const countdownElement = document.getElementById("countdown-timer");
+
+        countdownInterval = setInterval(() => {
+          timeLeft--;
+          countdownElement.textContent = timeLeft;
+
+          if (timeLeft <= 0) {
+            timeLeft = 60;
+            loadPlayers();
+          }
+        }, 1000);
+      }
+
+      function resetCountdown() {
+        clearInterval(countdownInterval);
+        timeLeft = 60;
+        document.getElementById("countdown-timer").textContent = timeLeft;
+        startCountdown();
+      }
+
+      // Load players when page loads
+      window.addEventListener("load", () => {
+        loadPlayers();
+        startCountdown();
+      });
+
+      // Manual refresh button
+      document.getElementById("refresh-btn").addEventListener("click", () => {
+        loadPlayers();
+        resetCountdown();
+      });
+    </script>
+  </body>
+</html>
