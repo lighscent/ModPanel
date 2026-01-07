@@ -4,7 +4,7 @@
   <groupId>com.xl1te</groupId>
   <artifactId>modpanel</artifactId>
   <name>ModPanel</name>
-  <version>0.1.0</version>
+  <version>alpha-0.1.1</version>
   <description>A powerful moderation panel for your Minecraft server.</description>
   <build>
     <plugins>
