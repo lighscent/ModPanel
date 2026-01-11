@@ -1,4 +1,4 @@
-|[SpigotMC](https://www.spigotmc.org/resources/modpanel.131671/)|
+| [SpigotMC](https://www.spigotmc.org/resources/modpanel.131671/) | [Modrinth *soon*] |
 
 # 🛡️ ModPanel
 
