@@ -1,3 +1,5 @@
+|[SpigotMC](https://www.spigotmc.org/resources/modpanel.131671/)|
+
 # 🛡️ ModPanel
 
 ![Version](https://img.shields.io/badge/version-0.1.1-red) ![Java](https://img.shields.io/badge/java-21-orange)
