@@ -1,12 +1,14 @@
-| [SpigotMC](https://www.spigotmc.org/resources/modpanel.131671/) | [Modrinth *soon*] |
+<div>
+<a href="https://www.spigotmc.org/resources/modpanel.131671/"><img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/supported/spigot_vector.svg"></a> 
+<a href="https://hangar.papermc.io/lighscent/ModPanel"><img alt="hangar" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/hangar_vector.svg">
+</a></div>
 
-# 🛡️ ModPanel
 
-![Version](https://img.shields.io/badge/version-alpha-0.1.2-red) ![Java](https://img.shields.io/badge/java-21-orange)
+# ModPanel
 
 ModPanel is a powerful Minecraft server management plugin that provides an intuitive web interface for administrators to monitor and manage player inventories in real-time. With ModPanel, you can easily view and modify player inventories, even when players are offline, thanks to its robust database integration.
 
-## ✨ Features
+## Features
 
 This plugin is actually in early development, but here are some of the key features already implemented:
 
@@ -16,7 +18,7 @@ This plugin is actually in early development, but here are some of the key featu
   - Live editing: Move items in players' inventories via a "Drag & Drop" system on the web page.
   - Offline Support: Inventories are saved in a local database (H2), allowing modification of a player's inventory even when they are offline.
 
-## ⚙️ Configuration
+## Configuration
 
 The configuration file `config.yml` allows you to manage the web server settings and security options. Below is an example configuration:
 ```yaml
@@ -27,13 +29,13 @@ ip-whitelist:                  # List of allowed IP addresses
   - "0.0.0.0"
 ```
 
-## 📜 Commands
+## Commands
 The following commands are available for server administrators:
 
 - `/mp reload` : Reload the plugin configuration.
 - `/mp help` : Display the list of available commands.
 
-## 🚀 Roadmap
+## Roadmap
 
 The project is under active development. Here are some upcoming features:
 
