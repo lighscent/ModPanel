@@ -2,7 +2,7 @@
 
 # 🛡️ ModPanel
 
-![Version](https://img.shields.io/badge/version-0.1.1-red) ![Java](https://img.shields.io/badge/java-21-orange)
+![Version](https://img.shields.io/badge/version-alpha-0.1.2-red) ![Java](https://img.shields.io/badge/java-21-orange)
 
 ModPanel is a powerful Minecraft server management plugin that provides an intuitive web interface for administrators to monitor and manage player inventories in real-time. With ModPanel, you can easily view and modify player inventories, even when players are offline, thanks to its robust database integration.
 
