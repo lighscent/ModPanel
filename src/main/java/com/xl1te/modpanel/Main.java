@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.List;
 
 import com.xl1te.modpanel.utils.ColoredLogger;
+import com.xl1te.modpanel.utils.VersionCheck;
 import com.xl1te.modpanel.web.WebServer;
 import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.commands.MpCommand;
@@ -23,6 +24,11 @@ public class Main extends JavaPlugin {
         saveDefaultConfig();
 
         databaseManager = new DatabaseManager(coloredLogger, "./plugins/ModPanel/data");
+
+        VersionCheck versionCheck = new VersionCheck();
+        if (versionCheck.isUpdateAvailable()) {
+            coloredLogger.warning("A new version of ModPanel is available!");
+        }
 
         // Initialize and start web server
         int port = getConfig().getInt("server-port", 9999);
