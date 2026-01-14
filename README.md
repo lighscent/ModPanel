@@ -43,3 +43,6 @@ The project is under active development. Here are some upcoming features:
 - Viewing and editing the Enderchest.
 - User account authentication system (Login/Password) for enhanced security.
 - Live viewing of chat and console logs.
+
+## Statistics by bStats
+<img src="https://bstats.org/signatures/bukkit/ModPanel.svg" alt="ModPanel"/>
