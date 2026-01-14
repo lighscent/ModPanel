@@ -32,26 +32,14 @@ public class PlayerListener implements Listener {
             var armorInventory = databaseManager.loadPlayerArmorInventory(uuid);
             var offhandItem = databaseManager.loadPlayerOffhandItem(uuid);
 
-            // Check if we have saved inventory data
-            boolean hasSavedData = false;
+            // Check if we have saved inventory data (record exists in database)
             if (mainInventory != null) {
-                for (ItemStack item : mainInventory) {
-                    if (item != null && !item.getType().name().equals("AIR")) {
-                        hasSavedData = true;
-                        break;
-                    }
-                }
-            }
-
-            if (hasSavedData) {
                 // Apply saved inventory to player
                 var inventory = event.getPlayer().getInventory();
 
-                // Set main inventory
+                // Set main inventory - Always apply even if null to prevent duplication
                 for (int i = 0; i < Math.min(mainInventory.length, 36); i++) {
-                    if (mainInventory[i] != null) {
-                        inventory.setItem(i, mainInventory[i]);
-                    }
+                    inventory.setItem(i, mainInventory[i]);
                 }
 
                 // Set armor
@@ -67,7 +55,7 @@ public class PlayerListener implements Listener {
                     inventory.setItemInOffHand(offhandItem);
                 }
 
-                logger.info("Loaded saved inventory for player " + name);
+                logger.info("Loaded saved inventory from database for player " + name);
             }
         } catch (Exception e) {
             logger.warning("Failed to load saved inventory for player " + name + ": " + e.getMessage());

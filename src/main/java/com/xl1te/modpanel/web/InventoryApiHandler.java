@@ -116,18 +116,34 @@ public class InventoryApiHandler implements HttpHandler {
 
                         json.append("{");
                         json.append("\"main\":[");
-                        for (int i = 0; i < mainInventory.length; i++) {
-                            if (i > 0)
-                                json.append(",");
-                            json.append(inventoryUtils.itemToJson(mainInventory[i]));
+                        if (mainInventory != null) {
+                            for (int i = 0; i < mainInventory.length; i++) {
+                                if (i > 0)
+                                    json.append(",");
+                                json.append(inventoryUtils.itemToJson(mainInventory[i]));
+                            }
+                        } else {
+                            for (int i = 0; i < 36; i++) {
+                                if (i > 0)
+                                    json.append(",");
+                                json.append("null");
+                            }
                         }
                         json.append("],");
 
                         json.append("\"armor\":[");
-                        for (int i = 0; i < armorInventory.length; i++) {
-                            if (i > 0)
-                                json.append(",");
-                            json.append(inventoryUtils.itemToJson(armorInventory[i]));
+                        if (armorInventory != null) {
+                            for (int i = 0; i < armorInventory.length; i++) {
+                                if (i > 0)
+                                    json.append(",");
+                                json.append(inventoryUtils.itemToJson(armorInventory[i]));
+                            }
+                        } else {
+                            for (int i = 0; i < 4; i++) {
+                                if (i > 0)
+                                    json.append(",");
+                                json.append("null");
+                            }
                         }
                         json.append("],");
 

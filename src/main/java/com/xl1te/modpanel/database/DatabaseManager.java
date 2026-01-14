@@ -125,7 +125,7 @@ public class DatabaseManager {
         } catch (SQLException | IOException | ClassNotFoundException e) {
             logger.warning("Failed to load player main inventory: " + e.getMessage());
         }
-        return new ItemStack[36];
+        return null;
     }
 
     public ItemStack[] loadPlayerArmorInventory(String uuid) {
@@ -140,7 +140,7 @@ public class DatabaseManager {
         } catch (SQLException | IOException | ClassNotFoundException e) {
             logger.warning("Failed to load player armor inventory: " + e.getMessage());
         }
-        return new ItemStack[4];
+        return null;
     }
 
     public ItemStack loadPlayerOffhandItem(String uuid) {
