@@ -50,7 +50,7 @@ public class MoveItemApiHandler implements HttpHandler {
             String requestBody = new String(t.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             String[] params = requestBody.split("&");
 
-            String playerName = null;
+            String playerUUID = null;
             int fromSlot = -1;
             int toSlot = -1;
 
@@ -61,8 +61,8 @@ public class MoveItemApiHandler implements HttpHandler {
                     String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
 
                     switch (key) {
-                        case "player":
-                            playerName = value;
+                        case "uuid":
+                            playerUUID = value;
                             break;
                         case "fromSlot":
                             try {
@@ -82,7 +82,7 @@ public class MoveItemApiHandler implements HttpHandler {
                 }
             }
 
-            if (playerName == null || fromSlot == -1 || toSlot == -1) {
+            if (playerUUID == null || fromSlot == -1 || toSlot == -1) {
                 String response = "{\"error\":\"Missing required parameters\"}";
                 t.getResponseHeaders().set("Content-Type", "application/json");
                 t.sendResponseHeaders(400, response.getBytes(StandardCharsets.UTF_8).length);
@@ -91,38 +91,30 @@ public class MoveItemApiHandler implements HttpHandler {
                 os.close();
             } else {
                 // Perform movement safely on the main thread
-                final String finalPlayerName = playerName;
+                final String finalUUID = playerUUID;
                 final int finalFromSlot = fromSlot;
                 final int finalToSlot = toSlot;
 
                 boolean success = false;
-                String playerUUID = null;
+                boolean playerExists = false;
 
                 try {
                     success = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
-                        Player target = null;
-                        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-                            if (onlinePlayer.getName().equals(finalPlayerName)) {
-                                target = onlinePlayer;
-                                break;
-                            }
+                        Player target = plugin.getServer().getPlayer(java.util.UUID.fromString(finalUUID));
+
+                        // Check if player exists in DB regardless of online status
+                        if (databaseManager.getPlayerName(finalUUID) != null) {
+                            return inventoryUtils.moveItemInInventory(finalUUID, finalFromSlot, finalToSlot, target);
                         }
-
-                        String uuid = (target != null) ? target.getUniqueId().toString()
-                                : databaseManager.getPlayerUUID(finalPlayerName);
-                        if (uuid == null)
-                            return false;
-
-                        return inventoryUtils.moveItemInInventory(uuid, finalFromSlot, finalToSlot, target);
+                        return false;
                     }).get();
 
-                    // Re-check if player exists for the error response
-                    playerUUID = databaseManager.getPlayerUUID(playerName);
-                } catch (InterruptedException | ExecutionException e) {
+                    playerExists = databaseManager.getPlayerName(playerUUID) != null;
+                } catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
                     logger.warning("Failed to move item on main thread: " + e.getMessage());
                 }
 
-                if (playerUUID == null) {
+                if (!playerExists) {
                     String response = "{\"error\":\"Player not found\"}";
                     t.getResponseHeaders().set("Content-Type", "application/json");
                     t.sendResponseHeaders(404, response.getBytes(StandardCharsets.UTF_8).length);
@@ -130,6 +122,9 @@ public class MoveItemApiHandler implements HttpHandler {
                     os.write(response.getBytes(StandardCharsets.UTF_8));
                     os.close();
                 } else {
+                    if (success) {
+                        EventsHandler.broadcast("refresh");
+                    }
                     String response = success ? "{\"success\":true}"
                             : "{\"success\":false,\"error\":\"Invalid slot or item movement\"}";
                     t.getResponseHeaders().set("Content-Type", "application/json");

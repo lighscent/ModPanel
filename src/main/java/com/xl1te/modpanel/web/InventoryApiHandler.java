@@ -45,21 +45,21 @@ public class InventoryApiHandler implements HttpHandler {
         } else {
             // Get query parameters
             String query = t.getRequestURI().getQuery();
-            String playerName = null;
+            String playerUUID = null;
 
             if (query != null) {
                 String[] params = query.split("&");
                 for (String param : params) {
                     String[] keyValue = param.split("=");
-                    if (keyValue.length == 2 && "player".equals(keyValue[0])) {
-                        playerName = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
+                    if (keyValue.length == 2 && "uuid".equals(keyValue[0])) {
+                        playerUUID = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
                         break;
                     }
                 }
             }
 
-            if (playerName == null) {
-                String response = "{\"error\":\"Player name required\"}";
+            if (playerUUID == null) {
+                String response = "{\"error\":\"Player UUID required\"}";
                 t.getResponseHeaders().set("Content-Type", "application/json");
                 t.sendResponseHeaders(400, response.getBytes(StandardCharsets.UTF_8).length);
                 OutputStream os = t.getResponseBody();
@@ -67,20 +67,13 @@ public class InventoryApiHandler implements HttpHandler {
                 os.close();
             } else {
                 // Find and serialize inventory safely on the main thread
-                final String finalPlayerName = playerName;
+                final String finalUUID = playerUUID;
                 String inventoryJson = null;
                 boolean isOnline = false;
 
                 try {
                     inventoryJson = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
-                        Player target = null;
-                        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
-                            if (onlinePlayer.getName().equals(finalPlayerName)) {
-                                target = onlinePlayer;
-                                break;
-                            }
-                        }
-
+                        Player target = plugin.getServer().getPlayer(java.util.UUID.fromString(finalUUID));
                         if (target != null) {
                             return inventoryUtils.serializeInventoryJson(target.getInventory());
                         }
@@ -88,12 +81,17 @@ public class InventoryApiHandler implements HttpHandler {
                     }).get();
                     if (inventoryJson != null)
                         isOnline = true;
-                } catch (InterruptedException | ExecutionException e) {
+                } catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
                     logger.warning("Failed to get player inventory on main thread: " + e.getMessage());
                 }
 
                 StringBuilder json = new StringBuilder();
                 json.append("{");
+
+                String playerName = databaseManager.getPlayerName(playerUUID);
+                if (playerName == null) {
+                    playerName = "Unknown";
+                }
 
                 if (isOnline) {
                     // Player is online, get their current inventory
@@ -103,61 +101,53 @@ public class InventoryApiHandler implements HttpHandler {
                     json.append(inventoryJson);
                 } else {
                     // Player is offline, load inventory from database
-                    String playerUUID = databaseManager.getPlayerUUID(playerName);
-                    if (playerUUID != null) {
-                        json.append("\"player\":{\"name\":\"").append(playerName)
-                                .append("\",\"online\":false},");
-                        json.append("\"inventory\":");
+                    json.append("\"player\":{\"name\":\"").append(playerName)
+                            .append("\",\"online\":false},");
+                    json.append("\"inventory\":");
 
-                        // Load saved inventory data
-                        ItemStack[] mainInventory = databaseManager.loadPlayerMainInventory(playerUUID);
-                        ItemStack[] armorInventory = databaseManager.loadPlayerArmorInventory(playerUUID);
-                        ItemStack offhandItem = databaseManager.loadPlayerOffhandItem(playerUUID);
+                    // Load saved inventory data
+                    ItemStack[] mainInventory = databaseManager.loadPlayerMainInventory(playerUUID);
+                    ItemStack[] armorInventory = databaseManager.loadPlayerArmorInventory(playerUUID);
+                    ItemStack offhandItem = databaseManager.loadPlayerOffhandItem(playerUUID);
 
-                        json.append("{");
-                        json.append("\"main\":[");
-                        if (mainInventory != null) {
-                            for (int i = 0; i < mainInventory.length; i++) {
-                                if (i > 0)
-                                    json.append(",");
-                                json.append(inventoryUtils.itemToJson(mainInventory[i]));
-                            }
-                        } else {
-                            for (int i = 0; i < 36; i++) {
-                                if (i > 0)
-                                    json.append(",");
-                                json.append("null");
-                            }
+                    json.append("{");
+                    json.append("\"main\":[");
+                    if (mainInventory != null) {
+                        for (int i = 0; i < mainInventory.length; i++) {
+                            if (i > 0)
+                                json.append(",");
+                            json.append(inventoryUtils.itemToJson(mainInventory[i]));
                         }
-                        json.append("],");
-
-                        json.append("\"armor\":[");
-                        if (armorInventory != null) {
-                            for (int i = 0; i < armorInventory.length; i++) {
-                                if (i > 0)
-                                    json.append(",");
-                                json.append(inventoryUtils.itemToJson(armorInventory[i]));
-                            }
-                        } else {
-                            for (int i = 0; i < 4; i++) {
-                                if (i > 0)
-                                    json.append(",");
-                                json.append("null");
-                            }
-                        }
-                        json.append("],");
-
-                        json.append("\"offhand\":[");
-                        json.append(inventoryUtils.itemToJson(offhandItem));
-                        json.append("]");
-
-                        json.append("}");
                     } else {
-                        // Player not found in database
-                        json.append("\"player\":{\"name\":\"").append(playerName)
-                                .append("\",\"online\":false},");
-                        json.append("\"inventory\":{\"main\":[],\"armor\":[],\"offhand\":[]}");
+                        for (int i = 0; i < 36; i++) {
+                            if (i > 0)
+                                json.append(",");
+                            json.append("null");
+                        }
                     }
+                    json.append("],");
+
+                    json.append("\"armor\":[");
+                    if (armorInventory != null) {
+                        for (int i = 0; i < armorInventory.length; i++) {
+                            if (i > 0)
+                                json.append(",");
+                            json.append(inventoryUtils.itemToJson(armorInventory[i]));
+                        }
+                    } else {
+                        for (int i = 0; i < 4; i++) {
+                            if (i > 0)
+                                json.append(",");
+                            json.append("null");
+                        }
+                    }
+                    json.append("],");
+
+                    json.append("\"offhand\":[");
+                    json.append(inventoryUtils.itemToJson(offhandItem));
+                    json.append("]");
+
+                    json.append("}");
                 }
 
                 json.append("}");
