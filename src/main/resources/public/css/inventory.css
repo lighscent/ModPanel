@@ -1,0 +1,236 @@
+/* Inventory Page Specific Styles */
+
+body {
+    min-height: 100vh;
+    padding: 20px;
+    padding-bottom: 70px;
+    /* Account for fixed footer */
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--player-head-color);
+    cursor: pointer;
+    padding: 10px;
+    margin-right: 15px;
+    border-radius: 5px;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    background-color: var(--player-item-bg);
+    color: var(--text-color);
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+}
+
+.player-head {
+    width: 48px;
+    height: 48px;
+    border-radius: 5px;
+    margin-right: 15px;
+    background-color: var(--player-head-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--player-head-color);
+}
+
+.player-details h1 {
+    margin-bottom: 5px;
+    font-size: 24px;
+}
+
+.player-status {
+    font-size: 14px;
+    color: var(--player-head-color);
+}
+
+.online {
+    color: var(--online-color);
+}
+
+.offline {
+    color: var(--offline-color);
+}
+
+.inventory-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.inventory-main {
+    display: grid;
+    grid-template-columns: repeat(9, 60px);
+    grid-template-rows: repeat(4, 60px);
+    gap: 2px;
+    background-color: #8b8b8b;
+    padding: 2px;
+    border-radius: 3px;
+}
+
+.inventory-armor {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 20px;
+}
+
+.inventory-offhand {
+    margin-right: 20px;
+}
+
+.inventory-section {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.section-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.inventory-slot {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #373737;
+    border-radius: 0;
+    background-color: #c6c6c6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.2s;
+    cursor: pointer;
+    user-select: none;
+}
+
+.inventory-slot:hover {
+    border-color: var(--btn-bg);
+    background-color: #d1d1d1;
+}
+
+.inventory-slot.empty {
+    background-color: #8b8b8b;
+    border-color: #373737;
+}
+
+.inventory-slot.empty:hover {
+    background-color: #999;
+}
+
+.inventory-slot.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.inventory-slot.drag-over {
+    border-color: var(--success-color);
+    background-color: #a8d5a2;
+}
+
+.inventory-slot.drag-invalid {
+    border-color: var(--error-color);
+    background-color: #f8d7da;
+}
+
+.inventory-slot.selected {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    border-color: #fff;
+}
+
+.item-icon {
+    max-width: 48px;
+    max-height: 48px;
+    border-radius: 3px;
+}
+
+.item-count {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 10px;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-weight: bold;
+}
+
+.item-enchantment {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background-color: rgba(0, 255, 0, 0.8);
+    color: white;
+    font-size: 8px;
+    padding: 1px 2px;
+    border-radius: 1px;
+    font-weight: bold;
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
+}
+
+.item-tooltip {
+    display: none;
+    position: absolute;
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 200px;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.item-tooltip .enchantment {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.inventory-slot:hover .item-tooltip {
+    display: block;
+}
+
+.loading,
+.error {
+    text-align: center;
+    padding: 50px;
+}
+
+.error {
+    color: var(--error-color);
+}
+
+.countdown {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--btn-bg);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}

@@ -123,3 +123,8 @@ getClass().getResourceAsStream("/pages/index.html")  // See WebServer.loadHtmlPa
 - Chestplate slot (38): `*_chestplate` items only
 - Leggings slot (37): `*_leggings` items only
 - Boots slot (36): `*_boots` items only
+
+
+# Personnalized Instructions for GitHub Copilot
+
+Do not make commands mvn clean package or similar build commands.

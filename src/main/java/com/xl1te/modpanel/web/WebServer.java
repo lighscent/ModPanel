@@ -49,6 +49,22 @@ public class WebServer {
             server.createContext("/api/move-item", new MoveItemApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
                     databaseManager, plugin, inventoryUtils));
 
+            // CSS files
+            server.createContext("/colors.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                    "/public/css/colors.css", "text/css"));
+
+            server.createContext("/global.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                    "/public/css/global.css", "text/css"));
+
+            server.createContext("/index.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                    "/public/css/index.css", "text/css"));
+
+            server.createContext("/inventory.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                    "/public/css/inventory.css", "text/css"));
+
+            server.createContext("/403.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                    "/public/css/403.css", "text/css"));
+
             server.start();
             logger.info("ModPanel Web Server started on port " + port);
         } catch (IOException e) {

@@ -1,0 +1,80 @@
+/* 403 Page Specific Styles */
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    padding-bottom: 60px;
+    /* Account for fixed footer */
+}
+
+.error-container {
+    background: var(--sidebar-bg);
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    border: 1px solid var(--border-color);
+}
+
+.lock-icon {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 20px;
+    display: inline-block;
+    color: var(--error-color);
+    background: var(--error-bg);
+    padding: 15px;
+    border-radius: 50%;
+}
+
+.lock-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.error-container h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    color: #1d3557;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.error-container h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #457b9d;
+}
+
+.error-container p {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+/* Dark mode for 403 */
+@media (prefers-color-scheme: dark) {
+    .error-container {
+        background-color: var(--sidebar-bg);
+        border-color: var(--border-color);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .error-container h1 {
+        color: var(--text-color);
+    }
+
+    .error-container h2 {
+        color: #a8dadc;
+    }
+
+    .error-container p {
+        color: #aaa;
+    }
+}

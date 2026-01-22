@@ -32,8 +32,8 @@ public class RootHandler implements HttpHandler {
     }
 
     private void preloadPages() {
-        htmlCache.put("/pages/index.html", loadHtmlPage("/pages/index.html"));
-        htmlCache.put("/pages/403.html", loadHtmlPage("/pages/403.html"));
+        htmlCache.put("/public/pages/index.html", loadHtmlPage("/public/pages/index.html"));
+        htmlCache.put("/public/pages/403.html", loadHtmlPage("/public/pages/403.html"));
     }
 
     private String getCachedPage(String path) {
@@ -59,7 +59,7 @@ public class RootHandler implements HttpHandler {
         boolean allowed = true;
         if (ipWhitelistEnabled && !ipWhitelist.contains(clientIP)) {
             allowed = false;
-            String response = loadHtmlPage("/pages/403.html");
+            String response = loadHtmlPage("/public/pages/403.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(403, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();
@@ -67,7 +67,7 @@ public class RootHandler implements HttpHandler {
             os.close();
             logger.warning("Blocked access from non-whitelisted IP: " + clientIP);
         } else {
-            String response = loadHtmlPage("/pages/index.html");
+            String response = loadHtmlPage("/public/pages/index.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();

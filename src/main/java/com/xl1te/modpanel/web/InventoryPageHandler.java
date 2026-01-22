@@ -32,8 +32,8 @@ public class InventoryPageHandler implements HttpHandler {
     }
 
     private void preloadPages() {
-        htmlCache.put("/pages/inventory.html", loadHtmlPage("/pages/inventory.html"));
-        htmlCache.put("/pages/403.html", loadHtmlPage("/pages/403.html"));
+        htmlCache.put("/public/pages/inventory.html", loadHtmlPage("/public/pages/inventory.html"));
+        htmlCache.put("/public/pages/403.html", loadHtmlPage("/public/pages/403.html"));
     }
 
     private String getCachedPage(String path) {
@@ -59,7 +59,7 @@ public class InventoryPageHandler implements HttpHandler {
         boolean allowed = true;
         if (ipWhitelistEnabled && !ipWhitelist.contains(clientIP)) {
             allowed = false;
-            String response = getCachedPage("/pages/403.html");
+            String response = getCachedPage("/public/pages/403.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(403, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();
@@ -67,7 +67,7 @@ public class InventoryPageHandler implements HttpHandler {
             os.close();
             logger.warning("Blocked inventory page access from non-whitelisted IP: " + clientIP);
         } else {
-            String response = getCachedPage("/pages/inventory.html");
+            String response = getCachedPage("/public/pages/inventory.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();

@@ -1,311 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ModPanel - Player Inventory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
-    <style>
-      /* --- General Reset & Typography --- */
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
-        background-color: #f4f6f8;
-        color: #333;
-        min-height: 100vh;
-        padding: 20px;
-      }
-
-      /* --- Dark Mode Support --- */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #121212;
-          color: #e0e0e0;
-        }
-      }
-
-      .header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 30px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #ddd;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .header {
-          border-bottom: 1px solid #333;
-        }
-      }
-
-      .back-btn {
-        background: none;
-        border: none;
-        color: #666;
-        cursor: pointer;
-        padding: 10px;
-        margin-right: 15px;
-        border-radius: 5px;
-        transition: all 0.2s;
-      }
-
-      .back-btn:hover {
-        background-color: #f0f0f0;
-        color: #333;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .back-btn {
-          color: #ccc;
-        }
-        .back-btn:hover {
-          background-color: #333;
-          color: #fff;
-        }
-      }
-
-      .player-info {
-        display: flex;
-        align-items: center;
-      }
-
-      .player-head {
-        width: 48px;
-        height: 48px;
-        border-radius: 5px;
-        margin-right: 15px;
-        background-color: #ddd;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        color: #666;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .player-head {
-          background-color: #444;
-          color: #ccc;
-        }
-      }
-
-      .player-details h1 {
-        margin-bottom: 5px;
-        font-size: 24px;
-      }
-
-      .player-status {
-        font-size: 14px;
-        color: #666;
-      }
-
-      .online {
-        color: #4caf50;
-      }
-
-      .offline {
-        color: #ccc;
-      }
-
-      .inventory-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-      }
-
-      .inventory-main {
-        display: grid;
-        grid-template-columns: repeat(9, 60px);
-        grid-template-rows: repeat(4, 60px);
-        gap: 2px;
-        background-color: #8b8b8b;
-        padding: 2px;
-        border-radius: 3px;
-      }
-
-      .inventory-armor {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        margin-left: 20px;
-      }
-
-      .inventory-offhand {
-        margin-right: 20px;
-      }
-
-      .inventory-row {
-        display: contents;
-      }
-
-      .inventory-section {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-      }
-
-      .section-title {
-        font-size: 18px;
-        margin-bottom: 15px;
-        padding-bottom: 5px;
-        border-bottom: 1px solid #ddd;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .section-title {
-          border-bottom: 1px solid #333;
-        }
-      }
-
-      .inventory-slot {
-        width: 60px;
-        height: 60px;
-        border: 2px solid #373737;
-        border-radius: 0;
-        background-color: #c6c6c6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        transition: all 0.2s;
-        cursor: pointer;
-        user-select: none;
-      }
-
-      .inventory-slot:hover {
-        border-color: #007bff;
-        background-color: #d1d1d1;
-      }
-
-      .inventory-slot.empty {
-        background-color: #8b8b8b;
-        border-color: #373737;
-      }
-
-      .inventory-slot.empty:hover {
-        background-color: #999;
-      }
-
-      .inventory-slot.dragging {
-        opacity: 0.5;
-        transform: rotate(5deg);
-      }
-
-      .inventory-slot.drag-over {
-        border-color: #28a745;
-        background-color: #a8d5a2;
-      }
-
-      .inventory-slot.drag-invalid {
-        border-color: #dc3545;
-        background-color: #f8d7da;
-      }
-
-      .inventory-slot.selected {
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-        border-color: #fff;
-      }
-
-      .item-icon {
-        max-width: 48px;
-        max-height: 48px;
-        border-radius: 3px;
-      }
-
-      .item-count {
-        position: absolute;
-        bottom: 2px;
-        right: 2px;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        font-size: 10px;
-        padding: 1px 3px;
-        border-radius: 2px;
-        font-weight: bold;
-      }
-
-      .item-enchantment {
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        background-color: rgba(0, 255, 0, 0.8);
-        color: white;
-        font-size: 8px;
-        padding: 1px 2px;
-        border-radius: 1px;
-        font-weight: bold;
-        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
-      }
-
-      .item-tooltip {
-        display: none;
-        position: absolute;
-        background-color: #333;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 3px;
-        font-size: 12px;
-        white-space: nowrap;
-        z-index: 1000;
-        pointer-events: none;
-        max-width: 200px;
-        word-wrap: break-word;
-        white-space: normal;
-      }
-
-      .item-tooltip .enchantment {
-        color: #4caf50;
-        font-weight: bold;
-      }
-
-      .inventory-slot:hover .item-tooltip {
-        display: block;
-      }
-
-      .loading {
-        text-align: center;
-        padding: 50px;
-        color: #666;
-      }
-
-      .error {
-        text-align: center;
-        padding: 50px;
-        color: #d32f2f;
-      }
-
-      .countdown {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #007bff;
-        color: white;
-        padding: 10px 15px;
-        border-radius: 20px;
-        font-size: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .countdown {
-          background-color: #0056b3;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/colors.css" />
+    <link rel="stylesheet" href="/global.css" />
+    <link rel="stylesheet" href="/inventory.css" />
   </head>
   <body>
     <div class="header">
-      <button class="back-btn" onclick="window.location.href='/'">
+      <button class="back-btn" onclick="window.location.href = '/'">
         <i class="fas fa-arrow-left"></i>
       </button>
       <div class="player-info">
@@ -737,5 +452,38 @@
         startCountdown();
       });
     </script>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a
+          href="https://github.com/xl1te/modpanel"
+          class="footer-link"
+          target="_blank"
+        >
+          <i class="fab fa-github"></i>GitHub
+        </a>
+        <a
+          href="https://github.com/xl1te/modpanel/blob/main/LICENSE"
+          class="footer-link"
+          target="_blank"
+        >
+          <i class="fas fa-file-contract"></i>License
+        </a>
+        <a
+          href="https://discord.gg/modpanel"
+          class="footer-link"
+          target="_blank"
+        >
+          <i class="fab fa-discord"></i>Discord
+        </a>
+        <a
+          href="https://modrinth.com/plugin/modpanel"
+          class="footer-link"
+          target="_blank"
+        >
+          <i class="fas fa-cube"></i>Modrinth
+        </a>
+      </div>
+    </footer>
   </body>
 </html>
