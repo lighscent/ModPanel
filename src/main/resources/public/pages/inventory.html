@@ -70,7 +70,7 @@
 
         try {
           const response = await fetch(
-            `/api/inventory?uuid=${encodeURIComponent(currentPlayerUUID)}`
+            `/api/inventory?uuid=${encodeURIComponent(currentPlayerUUID)}`,
           );
           const data = await response.json();
 
@@ -191,7 +191,7 @@
           // Drag end
           slot.addEventListener("dragend", (e) => {
             slots.forEach((s) =>
-              s.classList.remove("dragging", "drag-over", "drag-invalid")
+              s.classList.remove("dragging", "drag-over", "drag-invalid"),
             );
             draggedSlot = null;
             draggedItem = null;
@@ -207,7 +207,7 @@
                 const urlParts = draggedItem.src.split("/");
                 const itemName = urlParts[urlParts.length - 1].replace(
                   ".png",
-                  ""
+                  "",
                 );
                 itemType = "minecraft:" + itemName;
               }
@@ -247,7 +247,7 @@
                 const urlParts = draggedItem.src.split("/");
                 const itemName = urlParts[urlParts.length - 1].replace(
                   ".png",
-                  ""
+                  "",
                 );
                 itemType = "minecraft:" + itemName;
               }
@@ -258,7 +258,7 @@
                 moveItem(fromSlot, toSlot);
               } else {
                 alert(
-                  "Invalid move: Armor items can only be placed in their corresponding armor slots."
+                  "Invalid move: Armor items can only be placed in their corresponding armor slots.",
                 );
               }
             }
@@ -321,7 +321,7 @@
       async function moveItem(fromSlot, toSlot) {
         // Get the item being moved to validate armor restrictions
         const fromSlotElement = document.querySelector(
-          `[data-slot="${fromSlot}"]`
+          `[data-slot="${fromSlot}"]`,
         );
         const itemIcon = fromSlotElement
           ? fromSlotElement.querySelector(".item-icon")
@@ -338,7 +338,7 @@
         // Validate the move
         if (!isValidArmorMove(fromSlot, toSlot, itemType)) {
           alert(
-            "Invalid move: Armor items can only be placed in their corresponding armor slots."
+            "Invalid move: Armor items can only be placed in their corresponding armor slots.",
           );
           return;
         }
@@ -404,7 +404,7 @@
           <div class="inventory-slot" data-slot="${slotIndex}" draggable="true">
             <img src="https://minecraftitemids.com/item/64/${item.type.replace(
               "minecraft:",
-              ""
+              "",
             )}.png"
                  alt="${itemName}"
                  class="item-icon"
@@ -423,7 +423,37 @@
       // Load inventory when page loads
       window.addEventListener("load", () => {
         loadPlayerInventory();
+        checkVersion();
       });
+
+      async function checkVersion() {
+        const versionContainer = document.getElementById("version-status");
+        const versionInfo = document.getElementById("version-info");
+
+        try {
+          const response = await fetch("/api/version");
+          const data = await response.json();
+
+          if (data.updateAvailable) {
+            versionContainer.style.display = "inline-flex";
+            versionInfo.innerHTML = `
+                <a href="https://modrinth.com/plugin/modpanel" target="_blank" class="footer-link version-update">
+                  <i class="fas fa-exclamation-circle"></i>Update Available (${data.latest})
+                </a>
+            `;
+          } else {
+            versionContainer.style.display = "inline-flex";
+            versionInfo.innerHTML = `
+                <span class="footer-link version-latest">
+                  <i class="fas fa-check-circle"></i>v${data.current}
+                </span>
+            `;
+          }
+        } catch (error) {
+          console.error("Failed to check version:", error);
+          versionContainer.style.display = "none";
+        }
+      }
 
       // Event listener for live updates
       const eventSource = new EventSource("/api/events");
@@ -464,6 +494,11 @@
         >
           <i class="fas fa-cube"></i>Modrinth
         </a>
+        <div id="version-status" class="footer-version" style="display: none">
+          <span id="version-info">
+            <i class="fas fa-spinner fa-spin"></i>
+          </span>
+        </div>
       </div>
     </footer>
   </body>

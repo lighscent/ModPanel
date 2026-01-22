@@ -51,6 +51,8 @@ public class WebServer {
 
             server.createContext("/api/events", new EventsHandler(logger, ipWhitelistEnabled, ipWhitelist));
 
+            server.createContext("/api/version", new VersionApiHandler(logger, ipWhitelistEnabled, ipWhitelist));
+
             // CSS files
             server.createContext("/colors.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
                     "/public/css/colors.css", "text/css"));

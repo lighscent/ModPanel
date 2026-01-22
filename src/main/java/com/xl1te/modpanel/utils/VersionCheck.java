@@ -22,7 +22,7 @@ public class VersionCheck {
         return !current.equals(latest);
     }
 
-    private String getCurrentVersion() {
+    public String getCurrentVersion() {
         try (InputStream is = getClass().getResourceAsStream("/plugin.yml")) {
             if (is == null)
                 return null;
@@ -39,7 +39,7 @@ public class VersionCheck {
         return null;
     }
 
-    private String getLatestVersion() {
+    public String getLatestVersion() {
         try {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()

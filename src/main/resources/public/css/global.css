@@ -189,3 +189,21 @@ body {
 .footer-link i {
     font-size: 1rem;
 }
+
+.footer-version {
+    display: flex;
+    align-items: center;
+    padding-left: 20px;
+    border-left: 1px solid var(--border-color);
+    margin-left: -5px;
+}
+
+.version-update {
+    color: var(--warning-color) !important;
+}
+
+.version-latest {
+    color: var(--success-color) !important;
+    opacity: 0.6;
+    cursor: default;
+}

@@ -103,7 +103,6 @@ body {
     left: calc(50% + 150px);
 }
 
-
 .player-name.clickable:hover {
     text-decoration: underline;
     color: var(--link-color);

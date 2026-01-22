@@ -27,7 +27,8 @@ public class Main extends JavaPlugin {
 
         VersionCheck versionCheck = new VersionCheck();
         if (versionCheck.isUpdateAvailable()) {
-            coloredLogger.warning("A new version of ModPanel is available!");
+            coloredLogger.warning(
+                    "A new version of ModPanel is available! Download it here: https://modrinth.com/plugin/modpanel");
         }
 
         // Initialize and start web server
