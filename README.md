@@ -1,4 +1,5 @@
 <div>
+<a href="https://modrinth.com/plugin/modpanel"><img alt="modrinth" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/modrinth_vector.svg"></a>
 <a href="https://www.spigotmc.org/resources/modpanel.131671/"><img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/supported/spigot_vector.svg"></a> 
 <a href="https://hangar.papermc.io/lighscent/ModPanel"><img alt="hangar" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/hangar_vector.svg">
 </a></div>
