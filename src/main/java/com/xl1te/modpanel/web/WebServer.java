@@ -11,75 +11,85 @@ import java.util.List;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class WebServer {
-    private HttpServer server;
-    private ColoredLogger logger;
-    private int port;
-    private boolean ipWhitelistEnabled;
-    private List<String> ipWhitelist;
-    private DatabaseManager databaseManager;
-    private JavaPlugin plugin;
-    private InventoryUtils inventoryUtils;
+        private HttpServer server;
+        private ColoredLogger logger;
+        private int port;
+        private boolean ipWhitelistEnabled;
+        private List<String> ipWhitelist;
+        private DatabaseManager databaseManager;
+        private JavaPlugin plugin;
+        private InventoryUtils inventoryUtils;
 
-    public WebServer(ColoredLogger logger, int port, boolean ipWhitelistEnabled, List<String> ipWhitelist,
-            DatabaseManager databaseManager, JavaPlugin plugin) {
-        this.logger = logger;
-        this.port = port;
-        this.ipWhitelistEnabled = ipWhitelistEnabled;
-        this.ipWhitelist = ipWhitelist;
-        this.databaseManager = databaseManager;
-        this.plugin = plugin;
-        this.inventoryUtils = new InventoryUtils(logger, databaseManager);
-    }
-
-    public void startWebServer() {
-        try {
-            server = HttpServer.create(new InetSocketAddress(port), 0);
-
-            server.createContext("/", new RootHandler(logger, ipWhitelistEnabled, ipWhitelist, databaseManager));
-
-            server.createContext("/api/players",
-                    new PlayersApiHandler(logger, ipWhitelistEnabled, ipWhitelist, databaseManager, plugin));
-
-            server.createContext("/api/inventory", new InventoryApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    databaseManager, plugin, inventoryUtils));
-
-            server.createContext("/inventory.html",
-                    new InventoryPageHandler(logger, ipWhitelistEnabled, ipWhitelist, databaseManager));
-
-            server.createContext("/api/move-item", new MoveItemApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    databaseManager, plugin, inventoryUtils));
-
-            server.createContext("/api/events", new EventsHandler(logger, ipWhitelistEnabled, ipWhitelist));
-
-            server.createContext("/api/version", new VersionApiHandler(logger, ipWhitelistEnabled, ipWhitelist));
-
-            // CSS files
-            server.createContext("/colors.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    "/public/css/colors.css", "text/css"));
-
-            server.createContext("/global.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    "/public/css/global.css", "text/css"));
-
-            server.createContext("/index.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    "/public/css/index.css", "text/css"));
-
-            server.createContext("/inventory.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    "/public/css/inventory.css", "text/css"));
-
-            server.createContext("/403.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
-                    "/public/css/403.css", "text/css"));
-
-            server.start();
-            logger.info("ModPanel Web Server started on port " + port);
-        } catch (IOException e) {
-            logger.severe("Failed to start ModPanel Web Server on port " + port + ": " + e.getMessage());
+        public WebServer(ColoredLogger logger, int port, boolean ipWhitelistEnabled, List<String> ipWhitelist,
+                        DatabaseManager databaseManager, JavaPlugin plugin) {
+                this.logger = logger;
+                this.port = port;
+                this.ipWhitelistEnabled = ipWhitelistEnabled;
+                this.ipWhitelist = ipWhitelist;
+                this.databaseManager = databaseManager;
+                this.plugin = plugin;
+                this.inventoryUtils = new InventoryUtils(logger, databaseManager);
         }
-    }
 
-    public void stopWebServer() {
-        if (server != null) {
-            server.stop(0);
-            logger.severe("ModPanel Web Server stopped");
+        public void startWebServer() {
+                try {
+                        server = HttpServer.create(new InetSocketAddress(port), 0);
+
+                        server.createContext("/",
+                                        new RootHandler(logger, ipWhitelistEnabled, ipWhitelist, databaseManager));
+
+                        server.createContext("/api/players",
+                                        new PlayersApiHandler(logger, ipWhitelistEnabled, ipWhitelist, databaseManager,
+                                                        plugin));
+
+                        server.createContext("/api/inventory",
+                                        new InventoryApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        databaseManager, plugin, inventoryUtils));
+
+                        server.createContext("/inventory.html",
+                                        new InventoryPageHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        databaseManager));
+
+                        server.createContext("/api/move-item",
+                                        new MoveItemApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        databaseManager, plugin, inventoryUtils));
+
+                        server.createContext("/api/events", new EventsHandler(logger, ipWhitelistEnabled, ipWhitelist));
+
+                        server.createContext("/api/version",
+                                        new VersionApiHandler(logger, ipWhitelistEnabled, ipWhitelist));
+
+                        // CSS files
+                        server.createContext("/colors.css",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/css/colors.css", "text/css"));
+
+                        server.createContext("/global.css",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/css/global.css", "text/css"));
+
+                        server.createContext("/index.css",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/css/index.css", "text/css"));
+
+                        server.createContext("/inventory.css",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/css/inventory.css", "text/css"));
+
+                        server.createContext("/403.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                        "/public/css/403.css", "text/css"));
+
+                        server.start();
+                        logger.info("ModPanel Web Server started on port " + port);
+                } catch (IOException e) {
+                        logger.severe("Failed to start ModPanel Web Server on port " + port + ": " + e.getMessage());
+                }
         }
-    }
+
+        public void stopWebServer() {
+                if (server != null) {
+                        server.stop(0);
+                        logger.severe("ModPanel Web Server stopped");
+                }
+        }
 }
