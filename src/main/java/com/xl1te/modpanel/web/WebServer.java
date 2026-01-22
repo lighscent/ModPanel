@@ -49,6 +49,8 @@ public class WebServer {
             server.createContext("/api/move-item", new MoveItemApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
                     databaseManager, plugin, inventoryUtils));
 
+            server.createContext("/api/events", new EventsHandler(logger, ipWhitelistEnabled, ipWhitelist));
+
             // CSS files
             server.createContext("/colors.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
                     "/public/css/colors.css", "text/css"));

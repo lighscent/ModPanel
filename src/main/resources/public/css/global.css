@@ -140,35 +140,52 @@ body {
 /* Footer Styles */
 .footer {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     background-color: var(--sidebar-bg);
-    border-top: 1px solid var(--border-color);
-    padding: 10px 20px;
-    text-align: center;
-    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
+    padding: 10px 30px;
+    border-radius: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.footer:hover {
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
 }
 
 .footer-links {
     display: flex;
     justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: nowrap;
 }
 
 .footer-link {
-    color: var(--link-color);
+    color: var(--text-color);
     text-decoration: none;
-    transition: color 0.2s ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.7;
+    transition: all 0.2s ease;
 }
 
 .footer-link:hover {
-    color: var(--btn-hover-bg);
-    text-decoration: underline;
+    color: var(--btn-bg);
+    opacity: 1;
+    text-decoration: none;
+    transform: translateY(-1px);
 }
 
 .footer-link i {
-    margin-right: 5px;
+    font-size: 1rem;
 }

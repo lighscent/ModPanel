@@ -6,8 +6,8 @@ body {
     justify-content: flex-start;
     align-items: stretch;
     padding: 0;
-    padding-bottom: 50px;
-    /* Account for fixed footer */
+    padding-bottom: 80px;
+    /* Account for floating footer */
 }
 
 .sidebar {
@@ -97,6 +97,12 @@ body {
 .player-name {
     font-weight: bold;
 }
+
+/* Footer position override for index page */
+.main-content .footer {
+    left: calc(50% + 150px);
+}
+
 
 .player-name.clickable:hover {
     text-decoration: underline;

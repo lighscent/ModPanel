@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
     <link rel="stylesheet" href="/colors.css" />
     <link rel="stylesheet" href="/global.css" />
     <link rel="stylesheet" href="/index.css" />
@@ -23,24 +27,49 @@
         </button>
       </div>
       <div class="players-spacer"></div>
-      <ul id="player-list" class="player-list">
+      <div id="player-list" class="player-list">
         <!-- Players will be loaded here -->
-      </ul>
-      <div class="sidebar-footer">
-        <div class="countdown">
-          Auto-refresh in: <span id="countdown-timer">60</span>s
-        </div>
       </div>
     </div>
     <div class="main-content">
       <h1>Welcome to ModPanel</h1>
       <p>This is the main content area.</p>
+
+      <footer class="footer">
+        <div class="footer-links">
+          <a
+            href="https://github.com/lighscent/ModPanel"
+            class="footer-link"
+            target="_blank"
+          >
+            <i class="fab fa-github"></i>GitHub
+          </a>
+          <a
+            href="https://github.com/lighscent/ModPanel/blob/alpha/LICENSE"
+            class="footer-link"
+            target="_blank"
+          >
+            <i class="fas fa-file-contract"></i>License
+          </a>
+          <a
+            href="https://discord.gg/YmA88jc7GF"
+            class="footer-link"
+            target="_blank"
+          >
+            <i class="fab fa-discord"></i>Discord
+          </a>
+          <a
+            href="https://modrinth.com/plugin/modpanel"
+            class="footer-link"
+            target="_blank"
+          >
+            <i class="fas fa-cube"></i>Modrinth
+          </a>
+        </div>
+      </footer>
     </div>
 
     <script>
-      let countdownInterval;
-      let timeLeft = 60;
-
       async function loadPlayers() {
         try {
           const response = await fetch("/api/players");
@@ -76,9 +105,7 @@
             nameSpan.textContent = player.name;
             nameSpan.style.cursor = "pointer";
             nameSpan.onclick = function () {
-              window.location.href = `/inventory.html?player=${encodeURIComponent(
-                player.name
-              )}&uuid=${player.uuid}`;
+              window.location.href = `/inventory.html?uuid=${player.uuid}`;
             };
 
             const statusSpan = document.createElement("span");
@@ -100,71 +127,23 @@
         }
       }
 
-      function startCountdown() {
-        const countdownElement = document.getElementById("countdown-timer");
-
-        countdownInterval = setInterval(() => {
-          timeLeft--;
-          countdownElement.textContent = timeLeft;
-
-          if (timeLeft <= 0) {
-            timeLeft = 60;
-            loadPlayers();
-          }
-        }, 1000);
-      }
-
-      function resetCountdown() {
-        clearInterval(countdownInterval);
-        timeLeft = 60;
-        document.getElementById("countdown-timer").textContent = timeLeft;
-        startCountdown();
-      }
-
       // Load players when page loads
       window.addEventListener("load", () => {
         loadPlayers();
-        startCountdown();
       });
 
       // Manual refresh button
       document.getElementById("refresh-btn").addEventListener("click", () => {
         loadPlayers();
-        resetCountdown();
       });
-    </script>
 
-    <footer class="footer">
-      <div class="footer-links">
-        <a
-          href="https://github.com/xl1te/modpanel"
-          class="footer-link"
-          target="_blank"
-        >
-          <i class="fab fa-github"></i>GitHub
-        </a>
-        <a
-          href="https://github.com/xl1te/modpanel/blob/main/LICENSE"
-          class="footer-link"
-          target="_blank"
-        >
-          <i class="fas fa-file-contract"></i>License
-        </a>
-        <a
-          href="https://discord.gg/modpanel"
-          class="footer-link"
-          target="_blank"
-        >
-          <i class="fab fa-discord"></i>Discord
-        </a>
-        <a
-          href="https://modrinth.com/plugin/modpanel"
-          class="footer-link"
-          target="_blank"
-        >
-          <i class="fas fa-cube"></i>Modrinth
-        </a>
-      </div>
-    </footer>
+      // Event listener for live updates
+      const eventSource = new EventSource("/api/events");
+      eventSource.onmessage = function (event) {
+        if (event.data === "refresh") {
+          loadPlayers();
+        }
+      };
+    </script>
   </body>
 </html>

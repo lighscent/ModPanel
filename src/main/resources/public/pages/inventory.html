@@ -41,13 +41,7 @@
       </div>
     </div>
 
-    <div class="countdown">
-      Auto-refresh in: <span id="countdown-timer">60</span>s
-    </div>
-
     <script>
-      let countdownInterval;
-      let timeLeft = 60;
       let currentPlayerName = "";
       let currentPlayerUUID = "";
 
@@ -66,23 +60,24 @@
 
       async function loadPlayerInventory() {
         const params = getQueryParams();
-        currentPlayerName = params.player || "";
         currentPlayerUUID = params.uuid || "";
 
-        if (!currentPlayerName) {
+        if (!currentPlayerUUID) {
           document.getElementById("inventory-content").innerHTML =
-            '<div class="error">No player specified</div>';
+            '<div class="error">No UUID specified</div>';
           return;
         }
 
         try {
           const response = await fetch(
-            `/api/inventory?player=${encodeURIComponent(currentPlayerName)}`
+            `/api/inventory?uuid=${encodeURIComponent(currentPlayerUUID)}`
           );
           const data = await response.json();
 
           // Update player info
-          document.getElementById("player-name").textContent = data.player.name;
+          currentPlayerName = data.player.name;
+          document.getElementById("player-name").textContent =
+            currentPlayerName;
           document.getElementById("player-status").textContent = data.player
             .online
             ? "Online"
@@ -350,7 +345,7 @@
 
         try {
           const formData = new URLSearchParams();
-          formData.append("player", currentPlayerName);
+          formData.append("uuid", currentPlayerUUID);
           formData.append("fromSlot", fromSlot);
           formData.append("toSlot", toSlot);
 
@@ -425,52 +420,38 @@
         `;
       }
 
-      function startCountdown() {
-        const countdownElement = document.getElementById("countdown-timer");
-
-        countdownInterval = setInterval(() => {
-          timeLeft--;
-          countdownElement.textContent = timeLeft;
-
-          if (timeLeft <= 0) {
-            timeLeft = 60;
-            loadPlayerInventory();
-          }
-        }, 1000);
-      }
-
-      function resetCountdown() {
-        clearInterval(countdownInterval);
-        timeLeft = 60;
-        document.getElementById("countdown-timer").textContent = timeLeft;
-        startCountdown();
-      }
-
       // Load inventory when page loads
       window.addEventListener("load", () => {
         loadPlayerInventory();
-        startCountdown();
       });
+
+      // Event listener for live updates
+      const eventSource = new EventSource("/api/events");
+      eventSource.onmessage = function (event) {
+        if (event.data === "refresh") {
+          loadPlayerInventory();
+        }
+      };
     </script>
 
     <footer class="footer">
       <div class="footer-links">
         <a
-          href="https://github.com/xl1te/modpanel"
+          href="https://github.com/lighscent/modpanel"
           class="footer-link"
           target="_blank"
         >
           <i class="fab fa-github"></i>GitHub
         </a>
         <a
-          href="https://github.com/xl1te/modpanel/blob/main/LICENSE"
+          href="https://github.com/lighscent/modpanel/blob/alpha/LICENSE"
           class="footer-link"
           target="_blank"
         >
           <i class="fas fa-file-contract"></i>License
         </a>
         <a
-          href="https://discord.gg/modpanel"
+          href="https://discord.gg/YmA88jc7GF"
           class="footer-link"
           target="_blank"
         >

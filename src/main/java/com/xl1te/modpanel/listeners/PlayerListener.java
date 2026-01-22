@@ -2,12 +2,18 @@ package com.xl1te.modpanel.listeners;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.entity.Player;
 
 import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.utils.ColoredLogger;
+import com.xl1te.modpanel.web.EventsHandler;
 
 public class PlayerListener implements Listener {
     private ColoredLogger logger;
@@ -62,6 +68,31 @@ public class PlayerListener implements Listener {
         }
 
         logger.info("Player " + name + " joined and data stored.");
+        EventsHandler.broadcast("refresh");
+    }
+
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getWhoClicked() instanceof Player) {
+            EventsHandler.broadcast("refresh");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        EventsHandler.broadcast("refresh");
+    }
+
+    @EventHandler
+    public void onPlayerPickupItem(EntityPickupItemEvent event) {
+        if (event.getEntity() instanceof Player) {
+            EventsHandler.broadcast("refresh");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
+        EventsHandler.broadcast("refresh");
     }
 
     @EventHandler
@@ -93,5 +124,6 @@ public class PlayerListener implements Listener {
         databaseManager.updateLastSeen(uuid);
 
         logger.info("Player " + name + " quit, inventory saved and last seen updated.");
+        EventsHandler.broadcast("refresh");
     }
 }
