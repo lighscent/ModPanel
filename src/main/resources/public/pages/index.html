@@ -89,6 +89,10 @@
             li.className = `player-item ${
               player.online ? "player-online" : "player-offline"
             }`;
+            li.style.cursor = "pointer";
+            li.onclick = function () {
+              window.location.href = `/inventory.html?uuid=${player.uuid}`;
+            };
 
             // Player head
             const headDiv = document.createElement("div");
@@ -106,12 +110,8 @@
             headDiv.appendChild(headImg);
 
             const nameSpan = document.createElement("span");
-            nameSpan.className = "player-name clickable";
+            nameSpan.className = "player-name";
             nameSpan.textContent = player.name;
-            nameSpan.style.cursor = "pointer";
-            nameSpan.onclick = function () {
-              window.location.href = `/inventory.html?uuid=${player.uuid}`;
-            };
 
             const statusSpan = document.createElement("span");
             statusSpan.className = `player-status ${
