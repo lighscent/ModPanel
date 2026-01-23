@@ -5,7 +5,7 @@
 
     <groupId>com.xl1te</groupId>
     <artifactId>modpanel</artifactId>
-    <version>alpha-0.2.0</version>
+    <version>alpha-0.2.1</version>
     <packaging>jar</packaging>
 
     <name>ModPanel</name>
