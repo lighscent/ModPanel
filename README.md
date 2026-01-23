@@ -3,7 +3,7 @@
 <a href="https://www.spigotmc.org/resources/modpanel.131671/"><img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/supported/spigot_vector.svg"></a> 
 <a href="https://hangar.papermc.io/lighscent/ModPanel"><img alt="hangar" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/hangar_vector.svg">
 </a></div>
-
+<a href="https://github.com/lighscent/ModPanel/issues"><img alt="hangar" height="40" src="https://img.shields.io/badge/Report%20a%20bug-Github-ffffff?logo=github&style=plastic&color=161c25&logoColor=181717">
 
 # ModPanel
 
