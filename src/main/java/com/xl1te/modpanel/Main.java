@@ -44,7 +44,7 @@ public class Main extends JavaPlugin {
         getCommand("mp").setTabCompleter(mpCommand);
 
         // register player listener
-        PlayerListener playerListener = new PlayerListener(coloredLogger, databaseManager);
+        PlayerListener playerListener = new PlayerListener(this, coloredLogger, databaseManager);
         getServer().getPluginManager().registerEvents(playerListener, this);
 
         coloredLogger.info("ModPanel has been enabled!");

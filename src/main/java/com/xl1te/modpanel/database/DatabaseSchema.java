@@ -37,7 +37,13 @@ public class DatabaseSchema {
             stmt.execute(accessLogsSql);
             stmt.execute(playersSql);
             stmt.execute(playerInventoriesSql);
-            logger.info("Database tables created successfully.");
+
+            // Add performance indexes
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_players_last_seen ON players(last_seen DESC)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_players_name ON players(name)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_access_logs_timestamp ON access_logs(timestamp)");
+
+            logger.info("Database tables and indexes created successfully.");
         }
     }
 }

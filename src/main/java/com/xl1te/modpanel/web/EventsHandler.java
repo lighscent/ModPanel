@@ -46,10 +46,6 @@ public class EventsHandler implements HttpHandler {
         exchange.sendResponseHeaders(200, 0);
 
         clients.add(exchange);
-
-        // We don't close the output stream here to keep the connection open.
-        // The thread will eventually be returned to the pool when the connection is
-        // closed by the client.
     }
 
     public static void broadcast(String data) {

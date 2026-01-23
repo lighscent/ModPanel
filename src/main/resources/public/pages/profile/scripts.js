@@ -325,12 +325,12 @@ function isValidArmorMove(fromSlot, toSlot, itemType) {
 
 async function moveItem(fromSlot, toSlot) {
     // Get the item being moved to validate armor restrictions
-    const fromSlotElement = document.querySelector(
-        `[data-slot="${fromSlot}"]`,
-    );
-    const itemIcon = fromSlotElement
-        ? fromSlotElement.querySelector(".item-icon")
-        : null;
+    const fromSlotElement = document.querySelector(`[data-slot="${fromSlot}"]`);
+    const toSlotElement = document.querySelector(`[data-slot="${toSlot}"]`);
+
+    if (!fromSlotElement || !toSlotElement) return;
+
+    const itemIcon = fromSlotElement.querySelector(".item-icon");
     let itemType = null;
 
     if (itemIcon && itemIcon.src) {
@@ -342,11 +342,34 @@ async function moveItem(fromSlot, toSlot) {
 
     // Validate the move
     if (!isValidArmorMove(fromSlot, toSlot, itemType)) {
-        alert(
-            "Invalid move: Armor items can only be placed in their corresponding armor slots.",
-        );
+        alert("Invalid move: Armor items can only be placed in their corresponding armor slots.");
         return;
     }
+
+    // --- Optimistic UI Update ---
+    // Save current state in case we need to revert
+    const fromHTML = fromSlotElement.innerHTML;
+    const fromDraggable = fromSlotElement.getAttribute("draggable");
+    const fromEmpty = fromSlotElement.classList.contains("empty");
+
+    const toHTML = toSlotElement.innerHTML;
+    const toDraggable = toSlotElement.getAttribute("draggable");
+    const toEmpty = toSlotElement.classList.contains("empty");
+
+    // Perform the swap immediately
+    fromSlotElement.innerHTML = toHTML;
+    fromSlotElement.setAttribute("draggable", toDraggable);
+    if (toEmpty) fromSlotElement.classList.add("empty");
+    else fromSlotElement.classList.remove("empty");
+
+    toSlotElement.innerHTML = fromHTML;
+    toSlotElement.setAttribute("draggable", fromDraggable);
+    if (fromEmpty) toSlotElement.classList.add("empty");
+    else toSlotElement.classList.remove("empty");
+
+    // Clear any selection/drag classes
+    fromSlotElement.classList.remove("selected", "dragging", "drag-over");
+    toSlotElement.classList.remove("selected", "dragging", "drag-over");
 
     try {
         const formData = new URLSearchParams();
@@ -364,15 +387,36 @@ async function moveItem(fromSlot, toSlot) {
 
         const result = await response.json();
 
-        if (result.success) {
-            // Reload inventory to show changes
-            loadPlayerInventory();
-        } else {
+        if (!result.success) {
+            // Revert if server rejected the move
+            fromSlotElement.innerHTML = fromHTML;
+            fromSlotElement.setAttribute("draggable", fromDraggable);
+            if (fromEmpty) fromSlotElement.classList.add("empty");
+            else fromSlotElement.classList.remove("empty");
+
+            toSlotElement.innerHTML = toHTML;
+            toSlotElement.setAttribute("draggable", toDraggable);
+            if (toEmpty) toSlotElement.classList.add("empty");
+            else toSlotElement.classList.remove("empty");
+
+            console.error("Failed to move item:", result.error);
             alert("Failed to move item: " + (result.error || "Unknown error"));
         }
+        // Success! No need to reload everything, UI is already updated.
     } catch (error) {
+        // Revert on network error
+        fromSlotElement.innerHTML = fromHTML;
+        fromSlotElement.setAttribute("draggable", fromDraggable);
+        if (fromEmpty) fromSlotElement.classList.add("empty");
+        else fromSlotElement.classList.remove("empty");
+
+        toSlotElement.innerHTML = toHTML;
+        toSlotElement.setAttribute("draggable", toDraggable);
+        if (toEmpty) toSlotElement.classList.add("empty");
+        else toSlotElement.classList.remove("empty");
+
         console.error("Failed to move item:", error);
-        alert("Failed to move item");
+        alert("Failed to move item due to a connection error.");
     }
 }
 

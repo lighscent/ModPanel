@@ -90,31 +90,27 @@ public class MoveItemApiHandler implements HttpHandler {
                 os.write(response.getBytes(StandardCharsets.UTF_8));
                 os.close();
             } else {
-                // Perform movement safely on the main thread
+                // Check player existence outside main thread logic
                 final String finalUUID = playerUUID;
                 final int finalFromSlot = fromSlot;
                 final int finalToSlot = toSlot;
 
+                String pName = databaseManager.getPlayerName(finalUUID);
+                boolean exists = pName != null;
                 boolean success = false;
-                boolean playerExists = false;
 
-                try {
-                    success = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
-                        Player target = plugin.getServer().getPlayer(java.util.UUID.fromString(finalUUID));
-
-                        // Check if player exists in DB regardless of online status
-                        if (databaseManager.getPlayerName(finalUUID) != null) {
+                if (exists) {
+                    try {
+                        success = plugin.getServer().getScheduler().callSyncMethod(plugin, () -> {
+                            Player target = plugin.getServer().getPlayer(java.util.UUID.fromString(finalUUID));
                             return inventoryUtils.moveItemInInventory(finalUUID, finalFromSlot, finalToSlot, target);
-                        }
-                        return false;
-                    }).get();
-
-                    playerExists = databaseManager.getPlayerName(playerUUID) != null;
-                } catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
-                    logger.warning("Failed to move item on main thread: " + e.getMessage());
+                        }).get();
+                    } catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
+                        logger.warning("Failed to move item on main thread: " + e.getMessage());
+                    }
                 }
 
-                if (!playerExists) {
+                if (!exists) {
                     String response = "{\"error\":\"Player not found\"}";
                     t.getResponseHeaders().set("Content-Type", "application/json");
                     t.sendResponseHeaders(404, response.getBytes(StandardCharsets.UTF_8).length);

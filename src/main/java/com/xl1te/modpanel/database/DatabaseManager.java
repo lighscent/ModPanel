@@ -25,15 +25,16 @@ public class DatabaseManager {
         this.schema = new DatabaseSchema(logger);
         try {
             Class.forName("org.h2.Driver");
-            connection = DriverManager.getConnection("jdbc:h2:" + dbPath, "sa", "");
+            connection = DriverManager.getConnection(
+                    "jdbc:h2:" + dbPath + ";CACHE_SIZE=65536;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE", "sa", "");
             schema.createTables(connection);
-            logger.info("Database connected successfully.");
+            logger.info("Database connected successfully with performance optimizations.");
         } catch (ClassNotFoundException | SQLException e) {
             logger.severe("Failed to connect to database: " + e.getMessage());
         }
     }
 
-    public void logAccess(String ip, boolean allowed) {
+    public synchronized void logAccess(String ip, boolean allowed) {
         String sql = "INSERT INTO access_logs (ip, allowed) VALUES (?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, ip);
@@ -44,7 +45,7 @@ public class DatabaseManager {
         }
     }
 
-    public void storePlayer(String uuid, String name) {
+    public synchronized void storePlayer(String uuid, String name) {
         String sql = "MERGE INTO players (uuid, name) KEY(uuid) VALUES (?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
@@ -55,7 +56,7 @@ public class DatabaseManager {
         }
     }
 
-    public String getPlayerName(String uuid) {
+    public synchronized String getPlayerName(String uuid) {
         String sql = "SELECT name FROM players WHERE uuid = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
@@ -69,7 +70,7 @@ public class DatabaseManager {
         return null;
     }
 
-    public String getPlayerUUID(String name) {
+    public synchronized String getPlayerUUID(String name) {
         String sql = "SELECT uuid FROM players WHERE name = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, name);
@@ -83,7 +84,7 @@ public class DatabaseManager {
         return null;
     }
 
-    public void updateLastSeen(String uuid) {
+    public synchronized void updateLastSeen(String uuid) {
         String sql = "UPDATE players SET last_seen = CURRENT_TIMESTAMP WHERE uuid = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
@@ -93,7 +94,8 @@ public class DatabaseManager {
         }
     }
 
-    public void savePlayerInventory(String uuid, ItemStack[] mainInventory, ItemStack[] armor, ItemStack offhand) {
+    public synchronized void savePlayerInventory(String uuid, ItemStack[] mainInventory, ItemStack[] armor,
+            ItemStack offhand) {
         try {
             // Serialize inventory data
             String mainData = serializeInventory(mainInventory);
@@ -113,7 +115,7 @@ public class DatabaseManager {
         }
     }
 
-    public ItemStack[] loadPlayerMainInventory(String uuid) {
+    public synchronized ItemStack[] loadPlayerMainInventory(String uuid) {
         String sql = "SELECT main_inventory FROM player_inventories WHERE uuid = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
@@ -128,7 +130,7 @@ public class DatabaseManager {
         return null;
     }
 
-    public ItemStack[] loadPlayerArmorInventory(String uuid) {
+    public synchronized ItemStack[] loadPlayerArmorInventory(String uuid) {
         String sql = "SELECT armor_inventory FROM player_inventories WHERE uuid = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
@@ -143,7 +145,7 @@ public class DatabaseManager {
         return null;
     }
 
-    public ItemStack loadPlayerOffhandItem(String uuid) {
+    public synchronized ItemStack loadPlayerOffhandItem(String uuid) {
         String sql = "SELECT offhand_item FROM player_inventories WHERE uuid = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
@@ -202,7 +204,7 @@ public class DatabaseManager {
         }
     }
 
-    public List<String[]> getAllPlayers() {
+    public synchronized List<String[]> getAllPlayers() {
         List<String[]> players = new ArrayList<>();
         String sql = "SELECT uuid, name, first_seen, last_seen FROM players ORDER BY last_seen DESC";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -221,7 +223,7 @@ public class DatabaseManager {
         return players;
     }
 
-    public void close() {
+    public synchronized void close() {
         if (connection != null) {
             try {
                 connection.close();

@@ -7,6 +7,8 @@ import com.xl1te.modpanel.database.DatabaseManager;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -19,6 +21,7 @@ public class WebServer {
         private DatabaseManager databaseManager;
         private JavaPlugin plugin;
         private InventoryUtils inventoryUtils;
+        private ExecutorService webExecutor;
 
         public WebServer(ColoredLogger logger, int port, boolean ipWhitelistEnabled, List<String> ipWhitelist,
                         DatabaseManager databaseManager, JavaPlugin plugin) {
@@ -29,11 +32,13 @@ public class WebServer {
                 this.databaseManager = databaseManager;
                 this.plugin = plugin;
                 this.inventoryUtils = new InventoryUtils(logger, databaseManager);
+                this.webExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         }
 
         public void startWebServer() {
                 try {
                         server = HttpServer.create(new InetSocketAddress(port), 0);
+                        server.setExecutor(webExecutor);
 
                         server.createContext("/",
                                         new RootHandler(logger, ipWhitelistEnabled, ipWhitelist, databaseManager));
@@ -100,6 +105,9 @@ public class WebServer {
         public void stopWebServer() {
                 if (server != null) {
                         server.stop(0);
+                        if (webExecutor != null) {
+                                webExecutor.shutdown();
+                        }
                         logger.severe("ModPanel Web Server stopped");
                 }
         }
