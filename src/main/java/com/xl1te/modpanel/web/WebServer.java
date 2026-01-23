@@ -46,7 +46,7 @@ public class WebServer {
                                         new InventoryApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
                                                         databaseManager, plugin, inventoryUtils));
 
-                        server.createContext("/inventory.html",
+                        server.createContext("/profile",
                                         new InventoryPageHandler(logger, ipWhitelistEnabled, ipWhitelist,
                                                         databaseManager));
 
@@ -78,6 +78,17 @@ public class WebServer {
 
                         server.createContext("/403.css", new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
                                         "/public/css/403.css", "text/css"));
+
+                        // Profile Modules
+                        server.createContext("/profile/header.html",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/pages/profile/header.html", "text/html"));
+                        server.createContext("/profile/footer.html",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/pages/profile/footer.html", "text/html"));
+                        server.createContext("/profile/scripts.js",
+                                        new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        "/public/pages/profile/scripts.js", "application/javascript"));
 
                         server.start();
                         logger.info("ModPanel Web Server started on port " + port);

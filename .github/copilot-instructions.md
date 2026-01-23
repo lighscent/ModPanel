@@ -88,7 +88,7 @@ getClass().getResourceAsStream("/pages/index.html")  // See WebServer.loadHtmlPa
 - `GET /api/players` - Player list with online status
 - `GET /api/inventory?player=name` - Inventory data (works offline)
 - `POST /api/move-item` - Move items between slots (works offline)
-- `GET /inventory.html` - Inventory management interface
+- `GET /profile` - Player profile and inventory management interface
 
 ### Security & Access Control
 - **IP Whitelisting**: Configurable IP restrictions

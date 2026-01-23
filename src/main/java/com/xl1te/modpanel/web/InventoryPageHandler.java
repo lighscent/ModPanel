@@ -32,7 +32,7 @@ public class InventoryPageHandler implements HttpHandler {
     }
 
     private void preloadPages() {
-        htmlCache.put("/public/pages/inventory.html", loadHtmlPage("/public/pages/inventory.html"));
+        htmlCache.put("/public/pages/profile.html", loadHtmlPage("/public/pages/profile.html"));
         htmlCache.put("/public/pages/403.html", loadHtmlPage("/public/pages/403.html"));
     }
 
@@ -67,7 +67,7 @@ public class InventoryPageHandler implements HttpHandler {
             os.close();
             logger.warning("Blocked inventory page access from non-whitelisted IP: " + clientIP);
         } else {
-            String response = getCachedPage("/public/pages/inventory.html");
+            String response = getCachedPage("/public/pages/profile.html");
             t.getResponseHeaders().set("Content-Type", "text/html");
             t.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
             OutputStream os = t.getResponseBody();
