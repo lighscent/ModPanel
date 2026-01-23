@@ -3,8 +3,11 @@
 <a href="https://www.spigotmc.org/resources/modpanel.131671/"><img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/supported/spigot_vector.svg"></a> 
 <a href="https://hangar.papermc.io/lighscent/ModPanel"><img alt="hangar" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/available/hangar_vector.svg">
 </a></div>
-
-
+<div>
+<a href="https://github.com/lighscent/ModPanel/issues"><img alt="issues" src="https://img.shields.io/badge/Report%20a%20bug-Github-ffffff?logo=github&style=plastic&color=161c25&logoColor=181717">
+<a href="https://discord.gg/YmA88jc7GF"><img alt="issues" src="https://dcbadge.limes.pink/api/server/YmA88jc7GF?style=social">
+</div>
+  
 # ModPanel
 
 ModPanel is a powerful Minecraft server management plugin that provides an intuitive web interface for administrators to monitor and manage player inventories in real-time. With ModPanel, you can easily view and modify player inventories, even when players are offline, thanks to its robust database integration.
