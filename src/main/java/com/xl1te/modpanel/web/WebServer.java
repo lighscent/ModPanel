@@ -95,6 +95,10 @@ public class WebServer {
                                         new StaticFileHandler(logger, ipWhitelistEnabled, ipWhitelist,
                                                         "/public/pages/profile/scripts.js", "application/javascript"));
 
+                        // Assets
+                        server.createContext("/assets/minecraft/",
+                                        new AssetsHandler(logger, ipWhitelistEnabled, ipWhitelist));
+
                         server.start();
                         logger.info("ModPanel Web Server started on port " + port);
                 } catch (IOException e) {

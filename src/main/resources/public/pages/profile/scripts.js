@@ -451,10 +451,10 @@ function renderInventorySlot(item, slotIndex) {
 
     return `
     <div class="inventory-slot" data-slot="${slotIndex}" draggable="true">
-      <img src="https://minecraftitemids.com/item/64/${item.type.replace(
+      <img src="/assets/minecraft/${item.type.replace(
         "minecraft:",
         "",
-    )}.png"
+    ).toLowerCase()}.png"
            alt="${itemName}"
            class="item-icon"
            onerror="this.style.display='none'">
