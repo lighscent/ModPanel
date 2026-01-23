@@ -216,6 +216,10 @@ body {
     transform: translate(15px, -50%);
 }
 
+.inventory-slot:hover .item-tooltip {
+    display: block;
+}
+
 .item-tooltip .enchantment {
     color: var(--success-color);
     font-weight: bold;
