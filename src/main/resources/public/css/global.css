@@ -207,3 +207,73 @@ body {
     opacity: 0.6;
     cursor: default;
 }
+
+/* Mobile Footer Responsive Styles */
+@media (max-width: 768px) {
+    .footer {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        transform: none;
+        border-radius: 10px;
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .footer-links {
+        gap: 8px;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .footer-link {
+        font-size: 0.7rem;
+        gap: 4px;
+        padding: 4px 8px;
+        flex: 0 1 auto;
+        opacity: 0.8;
+    }
+
+    .footer-link i {
+        font-size: 0.9rem;
+    }
+
+    .footer-version {
+        padding-left: 0;
+        padding-top: 8px;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 6px 8px;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+    }
+
+    .footer-links {
+        gap: 4px;
+    }
+
+    .footer-link {
+        font-size: 0.65rem;
+        gap: 3px;
+        padding: 3px 6px;
+    }
+
+    .footer-link i {
+        font-size: 0.8rem;
+    }
+
+    .footer-version {
+        padding-top: 6px;
+        font-size: 0.6rem;
+    }
+}

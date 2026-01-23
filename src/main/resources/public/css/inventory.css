@@ -102,10 +102,19 @@ body {
 }
 
 .section-title {
-    font-size: 18px;
-    margin-bottom: 15px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border-color);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-color);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.inventory-section-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .inventory-slot {
@@ -190,7 +199,7 @@ body {
 
 .item-tooltip {
     display: none;
-    position: absolute;
+    position: fixed;
     background-color: #333;
     color: white;
     padding: 8px 12px;
@@ -202,6 +211,9 @@ body {
     max-width: 200px;
     word-wrap: break-word;
     white-space: normal;
+    left: var(--tooltip-x, 0);
+    top: var(--tooltip-y, 0);
+    transform: translate(15px, -50%);
 }
 
 .item-tooltip .enchantment {
@@ -209,8 +221,8 @@ body {
     font-weight: bold;
 }
 
-.inventory-slot:hover .item-tooltip {
-    display: block;
+.inventory-slot.dragging .item-tooltip {
+    display: none !important;
 }
 
 .loading,
@@ -233,4 +245,102 @@ body {
     border-radius: 20px;
     font-size: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        padding-bottom: 120px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .back-btn {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .player-details h1 {
+        font-size: 20px;
+    }
+
+    .inventory-container {
+        gap: 15px;
+    }
+
+    .inventory-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .inventory-main {
+        grid-template-columns: repeat(9, 45px);
+        grid-template-rows: repeat(4, 45px);
+        gap: 1px;
+    }
+
+    .inventory-slot {
+        width: 45px;
+        height: 45px;
+    }
+
+    .item-icon {
+        max-width: 36px;
+        max-height: 36px;
+    }
+
+    .inventory-armor,
+    .inventory-offhand {
+        margin: 0;
+    }
+
+    .inventory-armor {
+        flex-direction: row;
+        margin-top: 10px;
+    }
+
+    .inventory-offhand {
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 5px;
+        padding-bottom: 110px;
+    }
+
+    .inventory-main {
+        grid-template-columns: repeat(9, 35px);
+        grid-template-rows: repeat(4, 35px);
+    }
+
+    .inventory-slot {
+        width: 35px;
+        height: 35px;
+        border-width: 1px;
+    }
+
+    .item-icon {
+        max-width: 28px;
+        max-height: 28px;
+    }
+
+    .item-count {
+        font-size: 8px;
+        padding: 0px 2px;
+    }
+
+    .item-enchantment {
+        font-size: 6px;
+    }
+
+    .player-details h1 {
+        font-size: 18px;
+    }
 }

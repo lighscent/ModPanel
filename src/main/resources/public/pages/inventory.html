@@ -116,13 +116,19 @@
         html += '<div class="inventory-section">';
 
         // Off-hand slot (left side)
+        html += '<div class="inventory-section-wrapper">';
+        html += '<div class="section-title">Left Hand</div>';
+        html += '<div class="inventory-offhand">';
         if (inventory.offhand && inventory.offhand.length > 0) {
-          html += '<div class="inventory-offhand">';
           html += renderInventorySlot(inventory.offhand[0], 40);
-          html += "</div>";
+        } else {
+          html += renderInventorySlot(null, 40);
         }
+        html += "</div></div>";
 
         // Main inventory + armor
+        html += '<div class="inventory-section-wrapper">';
+        html += '<div class="section-title">Inventory</div>';
         html += '<div class="inventory-main">';
 
         // Row 1-3: Main inventory (slots 9-35, but displayed as rows 1-3)
@@ -147,19 +153,26 @@
           html += renderInventorySlot(item, slotIndex);
         }
 
-        html += "</div>";
+        html += "</div></div>";
 
         // Armor slots (right side)
+        html += '<div class="inventory-section-wrapper">';
+        html += '<div class="section-title">Armors</div>';
+        html += '<div class="inventory-armor">';
         if (inventory.armor && inventory.armor.length > 0) {
-          html += '<div class="inventory-armor">';
           // Armor order: helmet (39), chestplate (38), leggings (37), boots (36)
           const armorOrder = [3, 2, 1, 0]; // helmet, chestplate, leggings, boots
           for (let i of armorOrder) {
             const slotIndex = 36 + i;
             html += renderInventorySlot(inventory.armor[i], slotIndex);
           }
-          html += "</div>";
+        } else {
+          // Render empty armor slots
+          for (let i = 39; i >= 36; i--) {
+            html += renderInventorySlot(null, i);
+          }
         }
+        html += "</div></div>";
 
         html += "</div></div>";
 
@@ -174,6 +187,17 @@
         let draggedSlot = null;
         let draggedItem = null;
 
+        // Track mouse position for tooltip
+        slots.forEach((slot) => {
+          slot.addEventListener("mousemove", (e) => {
+            const tooltip = slot.querySelector(".item-tooltip");
+            if (tooltip) {
+              tooltip.style.setProperty("--tooltip-x", `${e.clientX}px`);
+              tooltip.style.setProperty("--tooltip-y", `${e.clientY}px`);
+            }
+          });
+        });
+
         slots.forEach((slot) => {
           // Drag start
           slot.addEventListener("dragstart", (e) => {
@@ -181,6 +205,10 @@
             draggedItem = slot.querySelector(".item-icon");
             if (draggedItem) {
               slot.classList.add("dragging");
+              // Masquer tous les tooltips pendant le drag
+              document.querySelectorAll(".item-tooltip").forEach((tooltip) => {
+                tooltip.style.display = "none";
+              });
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData("text/html", slot.innerHTML);
             } else {
@@ -195,6 +223,10 @@
             );
             draggedSlot = null;
             draggedItem = null;
+            // Réactiver les tooltips après le drag
+            document.querySelectorAll(".item-tooltip").forEach((tooltip) => {
+              tooltip.style.display = "";
+            });
           });
 
           // Drag over
