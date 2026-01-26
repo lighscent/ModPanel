@@ -15,6 +15,7 @@ public class Main extends JavaPlugin {
     private ColoredLogger coloredLogger;
     private WebServer webServer;
     private DatabaseManager databaseManager;
+    private PlayerListener playerListener;
 
     @Override
     public void onEnable() {
@@ -44,7 +45,7 @@ public class Main extends JavaPlugin {
         getCommand("mp").setTabCompleter(mpCommand);
 
         // register player listener
-        PlayerListener playerListener = new PlayerListener(this, coloredLogger, databaseManager);
+        playerListener = new PlayerListener(this, coloredLogger, databaseManager);
         getServer().getPluginManager().registerEvents(playerListener, this);
 
         coloredLogger.info("ModPanel has been enabled!");
@@ -53,6 +54,12 @@ public class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         coloredLogger.severe("ModPanel has been disabled!");
+
+        // Save all online players' inventories before shutdown
+        if (playerListener != null) {
+            playerListener.saveAllOnlinePlayersInventory();
+        }
+
         if (webServer != null) {
             webServer.stopWebServer();
         }
