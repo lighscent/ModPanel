@@ -348,3 +348,29 @@ body {
         font-size: 18px;
     }
 }
+.trash-slot {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #8B0000;
+    border-radius: 5px;
+    background-color: #3e3e3e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.2s;
+    margin-left: 20px;
+}
+.trash-slot:hover {
+    background-color: #552222;
+    cursor: pointer;
+}
+.trash-slot.drag-over {
+    background-color: #aa3333;
+    border-color: #ff0000;
+    transform: scale(1.1);
+}
+.trash-slot i {
+    color: #e74c3c;
+    font-size: 24px;
+}

@@ -149,6 +149,13 @@ function renderInventory(inventory) {
     }
     html += "</div></div>";
 
+    // Trash slot
+    html += '<div class="inventory-section-wrapper">';
+    html += '<div class="section-title">Trash</div>';
+    html += '<div class="inventory-trash">';
+    html += '<div class="trash-slot" id="trash-can"><i class="fas fa-trash-alt"></i></div>';
+    html += '</div></div>';
+
     html += "</div></div>";
 
     document.getElementById("inventory-content").innerHTML = html;
@@ -161,6 +168,29 @@ function setupDragAndDrop() {
     const slots = document.querySelectorAll(".inventory-slot");
     let draggedSlot = null;
     let draggedItem = null;
+
+    // Trash Can Setup
+    const trashCan = document.getElementById("trash-can");
+    if (trashCan) {
+        trashCan.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            trashCan.classList.add("drag-over");
+        });
+
+        trashCan.addEventListener("dragleave", (e) => {
+            trashCan.classList.remove("drag-over");
+        });
+
+        trashCan.addEventListener("drop", (e) => {
+            e.preventDefault();
+            trashCan.classList.remove("drag-over");
+            if (draggedSlot && draggedItem) {
+                const fromSlot = parseInt(draggedSlot.dataset.slot);
+                deleteItem(fromSlot);
+            }
+        });
+    }
 
     // Track mouse position for tooltip
     slots.forEach((slot) => {
@@ -466,6 +496,41 @@ function renderInventorySlot(item, slotIndex) {
       <div class="item-tooltip">${tooltip}</div>
     </div>
   `;
+}
+
+async function deleteItem(slot) {
+    // Optimistic UI update
+    const slotElement = document.querySelector(`[data-slot="${slot}"]`);
+    if (slotElement) {
+        slotElement.innerHTML = '';
+        slotElement.classList.add('empty');
+        slotElement.removeAttribute('draggable');
+        slotElement.classList.remove('selected', 'dragging', 'drag-over');
+    }
+
+    try {
+        const formData = new URLSearchParams();
+        formData.append("uuid", currentPlayerUUID);
+        formData.append("slot", slot);
+
+        const response = await fetch("/api/remove-item", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            // Revert changes - reload inventory
+            loadPlayerInventory();
+            alert("Failed to delete item.");
+        }
+    } catch (error) {
+        console.error("Delete error:", error);
+        loadPlayerInventory();
+    }
 }
 
 async function checkVersion() {

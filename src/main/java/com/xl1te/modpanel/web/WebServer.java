@@ -59,6 +59,10 @@ public class WebServer {
                                         new MoveItemApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
                                                         databaseManager, plugin, inventoryUtils));
 
+                        server.createContext("/api/remove-item",
+                                        new RemoveItemApiHandler(logger, ipWhitelistEnabled, ipWhitelist,
+                                                        databaseManager, plugin, inventoryUtils));
+
                         server.createContext("/api/events", new EventsHandler(logger, ipWhitelistEnabled, ipWhitelist));
 
                         server.createContext("/api/version",

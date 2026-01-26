@@ -197,4 +197,80 @@ public class InventoryUtils {
             return false;
         }
     }
+
+    public boolean removeItemFromSlot(String playerUUID, int slot, Player onlinePlayer) {
+        try {
+            ItemStack[] mainInventory;
+            ItemStack[] armorInventory;
+            ItemStack offhandItem;
+
+            if (onlinePlayer != null) {
+                // Player is online - get current inventory
+                PlayerInventory inventory = onlinePlayer.getInventory();
+                mainInventory = new ItemStack[36];
+                for (int i = 0; i < 36; i++) {
+                    mainInventory[i] = inventory.getItem(i);
+                }
+                armorInventory = new ItemStack[] {
+                        inventory.getBoots(),
+                        inventory.getLeggings(),
+                        inventory.getChestplate(),
+                        inventory.getHelmet()
+                };
+                offhandItem = inventory.getItemInOffHand();
+            } else {
+                // Player is offline - load from database
+                mainInventory = databaseManager.loadPlayerMainInventory(playerUUID);
+                armorInventory = databaseManager.loadPlayerArmorInventory(playerUUID);
+                offhandItem = databaseManager.loadPlayerOffhandItem(playerUUID);
+            }
+
+            // Perform removal
+            if (slot >= 0 && slot < 36) {
+                // Main inventory slot
+                if (mainInventory != null && slot < mainInventory.length) {
+                    mainInventory[slot] = null;
+                }
+            } else if (slot >= 36 && slot <= 39) {
+                // Armor slot
+                int armorIndex = slot - 36;
+                if (armorInventory != null && armorIndex < armorInventory.length) {
+                    armorInventory[armorIndex] = null;
+                }
+            } else if (slot == 40) {
+                // Offhand slot
+                offhandItem = null;
+            } else {
+                return false; // Invalid slot
+            }
+
+            // Save back to database and/or apply to online player
+            if (onlinePlayer != null) {
+                // Apply changes to online player's inventory
+                PlayerInventory inventory = onlinePlayer.getInventory();
+                if (slot >= 0 && slot < 36) {
+                    inventory.setItem(slot, null);
+                } else if (slot >= 36 && slot <= 39) {
+                    if (slot == 36)
+                        inventory.setBoots(null);
+                    else if (slot == 37)
+                        inventory.setLeggings(null);
+                    else if (slot == 38)
+                        inventory.setChestplate(null);
+                    else if (slot == 39)
+                        inventory.setHelmet(null);
+                } else if (slot == 40) {
+                    inventory.setItemInOffHand(null);
+                }
+            }
+
+            // Always save to database for persistence
+            databaseManager.savePlayerInventory(playerUUID, mainInventory, armorInventory, offhandItem);
+
+            return true;
+        } catch (Exception e) {
+            logger.warning("Failed to remove item for player " + playerUUID + ": " + e.getMessage());
+            return false;
+        }
+    }
 }
