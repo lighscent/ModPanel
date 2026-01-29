@@ -27,9 +27,20 @@ public class Main extends JavaPlugin {
         databaseManager = new DatabaseManager(coloredLogger, "./plugins/ModPanel/data");
 
         VersionCheck versionCheck = new VersionCheck();
-        if (versionCheck.isUpdateAvailable()) {
-            coloredLogger.warning(
-                    "A new version of ModPanel is available! Download it here: https://modrinth.com/plugin/modpanel");
+        String current = versionCheck.getCurrentVersion();
+        String latest = versionCheck.getLatestVersion();
+
+        if (current != null && latest != null && !current.equals(latest)) {
+            if (versionCheck.isSecurityUpdate(latest)) {
+                coloredLogger.severe(
+                        "SECURITY UPDATE AVAILABLE! A critical security update (" + latest + ") is available.");
+                coloredLogger.severe(
+                        "Please update immediately at: https://modrinth.com/plugin/modpanel");
+            } else {
+                coloredLogger.warning(
+                        "A new version of ModPanel (" + latest
+                                + ") is available! Download it here: https://modrinth.com/plugin/modpanel");
+            }
         }
 
         // Initialize and start web server

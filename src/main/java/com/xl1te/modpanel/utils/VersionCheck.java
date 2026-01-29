@@ -22,6 +22,10 @@ public class VersionCheck {
         return !current.equals(latest);
     }
 
+    public boolean isSecurityUpdate(String version) {
+        return version != null && version.toLowerCase().endsWith("s");
+    }
+
     public String getCurrentVersion() {
         try (InputStream is = getClass().getResourceAsStream("/plugin.yml")) {
             if (is == null)
@@ -51,8 +55,14 @@ public class VersionCheck {
                 Gson gson = new Gson();
                 JsonArray tags = gson.fromJson(response.body(), JsonArray.class);
                 if (tags.size() > 0) {
-                    JsonObject latest = tags.get(0).getAsJsonObject();
-                    return latest.get("name").getAsString();
+                    String latest = tags.get(0).getAsJsonObject().get("name").getAsString();
+                    for (int i = 1; i < Math.min(tags.size(), 3); i++) {
+                        String tagName = tags.get(i).getAsJsonObject().get("name").getAsString();
+                        if (tagName.equalsIgnoreCase(latest + "s")) {
+                            return tagName;
+                        }
+                    }
+                    return latest;
                 }
             }
         } catch (Exception e) {

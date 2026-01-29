@@ -34,13 +34,15 @@ public class VersionApiHandler implements HttpHandler {
 
         String current = versionCheck.getCurrentVersion();
         String latest = versionCheck.getLatestVersion();
-        boolean updateAvailable = versionCheck.isUpdateAvailable();
+        boolean updateAvailable = current != null && latest != null && !current.equals(latest);
+        boolean isSecurity = versionCheck.isSecurityUpdate(latest);
 
         String json = String.format(
-                "{\"current\": \"%s\", \"latest\": \"%s\", \"updateAvailable\": %b}",
+                "{\"current\": \"%s\", \"latest\": \"%s\", \"updateAvailable\": %b, \"securityUpdate\": %b}",
                 current != null ? current : "unknown",
                 latest != null ? latest : "unknown",
-                updateAvailable);
+                updateAvailable,
+                isSecurity);
 
         exchange.getResponseHeaders().add("Content-Type", "application/json");
         exchange.sendResponseHeaders(200, json.getBytes(StandardCharsets.UTF_8).length);

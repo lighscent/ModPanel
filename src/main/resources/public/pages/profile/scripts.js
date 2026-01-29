@@ -543,11 +543,19 @@ async function checkVersion() {
 
         if (data.updateAvailable) {
             versionContainer.style.display = "inline-flex";
-            versionInfo.innerHTML = `
-          <a href="https://modrinth.com/plugin/modpanel" target="_blank" class="footer-link version-update">
-            <i class="fas fa-exclamation-circle"></i>Update Available (${data.latest})
-          </a>
-      `;
+            if (data.securityUpdate) {
+                versionInfo.innerHTML = `
+                <a href="https://modrinth.com/plugin/modpanel" target="_blank" class="footer-link version-security" title="Critical Security Update Available!">
+                  <i class="fas fa-shield-alt"></i>SECURITY UPDATE (${data.latest})
+                </a>
+            `; showSecurityModal(data.latest);
+            } else {
+                versionInfo.innerHTML = `
+                <a href="https://modrinth.com/plugin/modpanel" target="_blank" class="footer-link version-update">
+                  <i class="fas fa-exclamation-circle"></i>Update Available (${data.latest})
+                </a>
+            `;
+            }
         } else {
             versionContainer.style.display = "inline-flex";
             versionInfo.innerHTML = `
@@ -576,3 +584,20 @@ eventSource.onmessage = function (event) {
         loadPlayerInventory();
     }
 };
+
+function showSecurityModal(version) {
+    // Prevent duplicate modals
+    if (document.getElementById("security-modal")) return;
+
+    const modalHtml = `
+        <div id="security-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-icon"><i class="fas fa-shield-alt"></i></div>
+                <h2 class="modal-title">CRITICAL SECURITY UPDATE</h2>
+                <p class="modal-text">A critical security update (<strong>${version}</strong>) is available for ModPanel.<br>Please update immediately to protect your server.</p>
+                <a href="https://modrinth.com/plugin/modpanel" target="_blank" class="btn" style="background-color: var(--error-color);">Download Update Now</a>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
