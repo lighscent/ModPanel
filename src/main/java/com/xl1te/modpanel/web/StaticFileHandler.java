@@ -30,7 +30,10 @@ public class StaticFileHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         String clientIP = exchange.getRemoteAddress().getAddress().getHostAddress();
 
-        if (ipWhitelistEnabled && !ipWhitelist.contains(clientIP)) {
+        // Allow access to CSS files without IP check for proper 403 page styling
+        boolean isCssFile = resourcePath != null && resourcePath.contains("/css/");
+
+        if (!isCssFile && ipWhitelistEnabled && !ipWhitelist.contains(clientIP)) {
             logger.warning("Access denied for IP: " + clientIP + " on path: " + exchange.getRequestURI().getPath());
             String response = "403 Forbidden";
             exchange.sendResponseHeaders(403, response.length());
