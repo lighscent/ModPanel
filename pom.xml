@@ -5,7 +5,7 @@
 
     <groupId>com.xl1te</groupId>
     <artifactId>modpanel</artifactId>
-    <version>alpha-0.2.1</version>
+    <version>alpha-0.2.2s</version>
     <packaging>jar</packaging>
 
     <name>ModPanel</name>
@@ -36,6 +36,7 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.4.240</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

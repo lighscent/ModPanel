@@ -1,5 +1,5 @@
 name: ModPanel
-version: alpha-0.2.1
+version: alpha-0.2.2s
 main: com.xl1te.modpanel.Main
 api-version: 1.19
 description: A powerful moderation panel for your Minecraft server.
@@ -16,3 +16,5 @@ permissions:
   mp.admin:
     description: Allows access to ModPanel admin commands
     default: op
+libraries:
+  - com.h2database:h2:2.4.240
