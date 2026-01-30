@@ -55,6 +55,17 @@ public class RootHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange t) throws IOException {
+        String path = t.getRequestURI().getPath();
+        if (!path.equals("/")) {
+            // Only handle root path, return 404 for others
+            String response = "404 Not Found";
+            t.sendResponseHeaders(404, response.length());
+            try (OutputStream os = t.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
+
         String clientIP = t.getRemoteAddress().getAddress().getHostAddress();
         boolean allowed = true;
         if (ipWhitelistEnabled && !ipWhitelist.contains(clientIP)) {
