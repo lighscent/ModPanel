@@ -84,52 +84,77 @@
           // Clear existing list
           playerList.innerHTML = "";
 
-          players.forEach((player) => {
-            const li = document.createElement("li");
-            li.className = `player-item ${
-              player.online ? "player-online" : "player-offline"
-            }`;
-            li.style.cursor = "pointer";
-            li.onclick = function () {
-              window.location.href = `/profile?uuid=${player.uuid}`;
-            };
+          const onlinePlayers = players.filter((p) => p.online);
+          const offlinePlayers = players.filter((p) => !p.online);
 
-            // Player head
-            const headDiv = document.createElement("div");
-            headDiv.className = "player-head";
-            const headImg = document.createElement("img");
-            headImg.src = `https://cravatar.eu/avatar/${player.uuid}/32.png`;
-            headImg.alt = `${player.name}'s head`;
-            headImg.style.width = "32px";
-            headImg.style.height = "32px";
-            headImg.style.borderRadius = "3px";
-            headImg.onerror = function () {
-              // Fallback to default head if image fails to load
-              headDiv.innerHTML = '<i class="fas fa-user"></i>';
-            };
-            headDiv.appendChild(headImg);
+          if (onlinePlayers.length > 0) {
+            const onlineHeader = document.createElement("div");
+            onlineHeader.className = "list-header";
+            onlineHeader.innerHTML = `<i class="fas fa-circle online"></i> Online Players (${onlinePlayers.length})`;
+            playerList.appendChild(onlineHeader);
 
-            const nameSpan = document.createElement("span");
-            nameSpan.className = "player-name";
-            nameSpan.textContent = player.name;
+            onlinePlayers.forEach((player) =>
+              playerList.appendChild(createPlayerElement(player)),
+            );
+          }
 
-            const statusSpan = document.createElement("span");
-            statusSpan.className = `player-status ${
-              player.online ? "online" : "offline"
-            }`;
-            statusSpan.textContent = player.online ? "Online" : "Offline";
+          if (offlinePlayers.length > 0) {
+            const offlineHeader = document.createElement("div");
+            offlineHeader.className = "list-header";
+            offlineHeader.innerHTML = `<i class="fas fa-circle-notch"></i> Offline Players`;
+            playerList.appendChild(offlineHeader);
 
-            li.appendChild(headDiv);
-            li.appendChild(nameSpan);
-            li.appendChild(statusSpan);
-            playerList.appendChild(li);
-          });
+            offlinePlayers.forEach((player) =>
+              playerList.appendChild(createPlayerElement(player)),
+            );
+          }
         } catch (error) {
           console.error("Failed to load players:", error);
           const playerList = document.getElementById("player-list");
           playerList.innerHTML =
             '<li class="player-item">Failed to load players</li>';
         }
+      }
+
+      function createPlayerElement(player) {
+        const li = document.createElement("li");
+        li.className = `player-item ${
+          player.online ? "player-online" : "player-offline"
+        }`;
+        li.style.cursor = "pointer";
+        li.onclick = function () {
+          window.location.href = `/profile?uuid=${player.uuid}`;
+        };
+
+        // Player head
+        const headDiv = document.createElement("div");
+        headDiv.className = "player-head";
+        const headImg = document.createElement("img");
+        headImg.src = `https://cravatar.eu/avatar/${player.uuid}/32.png`;
+        headImg.alt = `${player.name}'s head`;
+        headImg.style.width = "32px";
+        headImg.style.height = "32px";
+        headImg.style.borderRadius = "3px";
+        headImg.onerror = function () {
+          // Fallback to default head if image fails to load
+          headDiv.innerHTML = '<i class="fas fa-user"></i>';
+        };
+        headDiv.appendChild(headImg);
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "player-name";
+        nameSpan.textContent = player.name;
+
+        const statusSpan = document.createElement("span");
+        statusSpan.className = `player-status ${
+          player.online ? "online" : "offline"
+        }`;
+        statusSpan.textContent = player.online ? "Online" : "Offline";
+
+        li.appendChild(headDiv);
+        li.appendChild(nameSpan);
+        li.appendChild(statusSpan);
+        return li;
       }
 
       // Load players when page loads

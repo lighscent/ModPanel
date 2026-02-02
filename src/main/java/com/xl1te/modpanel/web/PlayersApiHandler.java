@@ -59,12 +59,24 @@ public class PlayersApiHandler implements HttpHandler {
             // Get all players from DB
             List<String[]> allPlayers = databaseManager.getAllPlayers();
 
+            // Sort: Online players first, then keep the DB order (last_seen DESC)
+            final Set<String> fastOnlineUUIDs = onlineUUIDs;
+            allPlayers.sort((a, b) -> {
+                boolean aOnline = fastOnlineUUIDs.contains(a[0]);
+                boolean bOnline = fastOnlineUUIDs.contains(b[0]);
+                if (aOnline && !bOnline)
+                    return -1;
+                if (!aOnline && bOnline)
+                    return 1;
+                return 0;
+            });
+
             // Build JSON response
             StringBuilder json = new StringBuilder();
             json.append("[");
             for (int i = 0; i < allPlayers.size(); i++) {
                 String[] player = allPlayers.get(i);
-                boolean online = onlineUUIDs.contains(player[0]);
+                boolean online = fastOnlineUUIDs.contains(player[0]);
                 json.append("{");
                 json.append("\"uuid\":\"").append(player[0]).append("\",");
                 json.append("\"name\":\"").append(player[1]).append("\",");

@@ -60,6 +60,22 @@ body {
     padding: 0;
 }
 
+.list-header {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--player-head-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 15px 0 8px 5px;
+    display: flex;
+    align-items: center;
+}
+
+.list-header i {
+    margin-right: 6px;
+    font-size: 0.9em;
+}
+
 .player-item {
     padding: 10px;
     margin-bottom: 5px;
