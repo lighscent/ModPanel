@@ -42,8 +42,9 @@ public class DatabaseSchema {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_players_last_seen ON players(last_seen DESC)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_players_name ON players(name)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_access_logs_timestamp ON access_logs(timestamp)");
-
-            logger.info("Database tables and indexes created successfully.");
+        } catch (SQLException e) {
+            logger.severe("Error creating database tables: " + e.getMessage());
+            throw e;
         }
     }
 }

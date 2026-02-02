@@ -28,7 +28,6 @@ public class DatabaseManager {
             connection = DriverManager.getConnection(
                     "jdbc:h2:" + dbPath + ";CACHE_SIZE=65536;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE", "sa", "");
             schema.createTables(connection);
-            logger.info("Database connected successfully with performance optimizations.");
         } catch (ClassNotFoundException | SQLException e) {
             logger.severe("Failed to connect to database: " + e.getMessage());
         }
