@@ -2,6 +2,7 @@ package com.xl1te.modpanel.web;
 
 import com.sun.net.httpserver.HttpServer;
 import com.xl1te.modpanel.utils.ColoredLogger;
+import com.xl1te.modpanel.utils.PublicIpUtil;
 import com.xl1te.modpanel.database.DatabaseManager;
 
 import java.io.IOException;
@@ -104,7 +105,12 @@ public class WebServer {
                                         new AssetsHandler(logger, ipWhitelistEnabled, ipWhitelist));
 
                         server.start();
-                        logger.info("ModPanel Web Server started on port " + port);
+                        String publicIp = PublicIpUtil.getPublicIp();
+                        if (publicIp != null) {
+                                logger.info("ModPanel Web Server is accessible at http://" + publicIp + ":" + port);
+                        } else {
+                                logger.info("ModPanel Web Server started on port " + port);
+                        }
                 } catch (IOException e) {
                         logger.severe("Failed to start ModPanel Web Server on port " + port + ": " + e.getMessage());
                 }
