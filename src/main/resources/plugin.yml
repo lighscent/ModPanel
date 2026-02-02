@@ -18,3 +18,4 @@ permissions:
     default: op
 libraries:
   - com.h2database:h2:2.4.240
+  - com.google.code.gson:gson:2.10.1
