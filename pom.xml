@@ -83,10 +83,6 @@
                             <pattern>org.bstats</pattern>
                             <shadedPattern>com.xl1te.modpanel.bstats</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>com.google.gson</pattern>
-                            <shadedPattern>com.xl1te.modpanel.gson</shadedPattern>
-                        </relocation>
                     </relocations>
                 </configuration>
             </plugin>
