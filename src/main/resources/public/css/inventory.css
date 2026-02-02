@@ -225,6 +225,25 @@ body {
     font-weight: bold;
 }
 
+.tooltip-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 4px;
+}
+
+.tooltip-count {
+    font-size: 11px;
+    color: #bbb;
+    margin-bottom: 4px;
+}
+
+.tooltip-enchantments {
+    font-size: 11px;
+    color: #eee;
+    padding-top: 4px;
+}
+
 .inventory-slot.dragging .item-tooltip {
     display: none !important;
 }
@@ -348,6 +367,7 @@ body {
         font-size: 18px;
     }
 }
+
 .trash-slot {
     width: 60px;
     height: 60px;
@@ -361,15 +381,18 @@ body {
     transition: all 0.2s;
     margin-left: 20px;
 }
+
 .trash-slot:hover {
     background-color: #552222;
     cursor: pointer;
 }
+
 .trash-slot.drag-over {
     background-color: #aa3333;
     border-color: #ff0000;
     transform: scale(1.1);
 }
+
 .trash-slot i {
     color: #e74c3c;
     font-size: 24px;

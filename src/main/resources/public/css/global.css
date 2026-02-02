@@ -101,6 +101,123 @@ body {
     display: flex;
 }
 
+/* Minecraft Color Codes */
+.mc-0 {
+    color: #000000;
+}
+
+/* black */
+.mc-1 {
+    color: #0000AA;
+}
+
+/* dark_blue */
+.mc-2 {
+    color: #00AA00;
+}
+
+/* dark_green */
+.mc-3 {
+    color: #00AAAA;
+}
+
+/* dark_aqua */
+.mc-4 {
+    color: #AA0000;
+}
+
+/* dark_red */
+.mc-5 {
+    color: #AA00AA;
+}
+
+/* dark_purple */
+.mc-6 {
+    color: #FFAA00;
+}
+
+/* gold */
+.mc-7 {
+    color: #AAAAAA;
+}
+
+/* gray */
+.mc-8 {
+    color: #555555;
+}
+
+/* dark_gray */
+.mc-9 {
+    color: #5555FF;
+}
+
+/* blue */
+.mc-a {
+    color: #55FF55;
+}
+
+/* green */
+.mc-b {
+    color: #55FFFF;
+}
+
+/* aqua */
+.mc-c {
+    color: #FF5555;
+}
+
+/* red */
+.mc-d {
+    color: #FF55FF;
+}
+
+/* light_purple */
+.mc-e {
+    color: #FFFF55;
+}
+
+/* yellow */
+.mc-f {
+    color: #FFFFFF;
+}
+
+/* white */
+.mc-l {
+    font-weight: bold;
+}
+
+.mc-m {
+    text-decoration: line-through;
+}
+
+.mc-n {
+    text-decoration: underline;
+}
+
+.mc-o {
+    font-style: italic;
+}
+
+[prefers-color-scheme="dark"] .mc-0 {
+    color: #333333;
+}
+
+/* Adjusted black for dark mode visibility */
+[prefers-color-scheme="dark"] .mc-8 {
+    color: #888888;
+}
+
+/* Adjusted dark_gray for dark mode visibility */
+
+/* Tooltip specific styles */
+.item-tooltip {
+    white-space: pre-wrap !important;
+}
+
+.item-tooltip span {
+    display: inline;
+}
+
 .align-items-center {
     align-items: center;
 }

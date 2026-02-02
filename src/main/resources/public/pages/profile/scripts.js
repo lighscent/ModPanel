@@ -17,6 +17,52 @@ function getQueryParams() {
     return params;
 }
 
+function minecraftToHtml(text) {
+    if (!text) return "";
+
+    // Replace § or & with a marker for easier splitting
+    // Support both § and & as color code start
+    let processed = text.replace(/[§&]([0-9a-fk-or])/gi, "§$1");
+
+    if (!processed.includes("§")) return text;
+
+    const parts = processed.split("§");
+    let result = "";
+    let openSpans = 0;
+
+    // The first part has no color code
+    result += parts[0];
+
+    for (let i = 1; i < parts.length; i++) {
+        const part = parts[i];
+        if (part.length === 0) continue;
+
+        const code = part[0].toLowerCase();
+        const content = part.substring(1);
+
+        if (code === "r") {
+            // Reset: close all open spans
+            while (openSpans > 0) {
+                result += "</span>";
+                openSpans--;
+            }
+        } else {
+            // Apply new style
+            result += `<span class="mc-${code}">`;
+            openSpans++;
+        }
+        result += content;
+    }
+
+    // Close any remaining spans
+    while (openSpans > 0) {
+        result += "</span>";
+        openSpans--;
+    }
+
+    return result;
+}
+
 // Load HTML modules
 async function loadModule(containerId, modulePath) {
     try {
@@ -455,23 +501,25 @@ function renderInventorySlot(item, slotIndex) {
         return `<div class="inventory-slot empty" data-slot="${slotIndex}" draggable="false"></div>`;
     }
 
-    const itemName =
-        item.displayName ||
-        item.type.replace("minecraft:", "").replace(/_/g, " ");
-    let tooltip = itemName;
+    const rawName = item.displayName || item.type.replace("minecraft:", "").replace(/_/g, " ");
+    const itemName = minecraftToHtml(rawName);
+    const strippedName = rawName.replace(/[§&][0-9a-fk-or]/gi, "");
+
+    let tooltip = `<div class="tooltip-name">${itemName}</div>`;
     if (item.count > 1) {
-        tooltip += ` (${item.count})`;
+        tooltip += `<div class="tooltip-count">Amount: ${item.count}</div>`;
     }
 
     // Add enchantments to tooltip
     if (item.enchantments && item.enchantments.length > 0) {
-        tooltip += "\n\nEnchantments:";
+        tooltip += '<div class="tooltip-enchantments">Enchantments:';
         item.enchantments.forEach((enchant) => {
             const enchantName = enchant.name
                 .replace("minecraft:", "")
                 .replace(/_/g, " ");
             tooltip += `\n<span class="enchantment">${enchantName} ${enchant.level}</span>`;
         });
+        tooltip += '</div>';
     }
 
     let enchantmentIndicator = "";
@@ -485,7 +533,7 @@ function renderInventorySlot(item, slotIndex) {
         "minecraft:",
         "",
     ).toLowerCase()}.png"
-           alt="${itemName}"
+           alt="${strippedName}"
            class="item-icon"
            onerror="this.style.display='none'">
       ${item.count > 1
