@@ -5,6 +5,7 @@ import com.xl1te.modpanel.config.PluginConfig;
 import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.discord.DiscordBot;
 import com.xl1te.modpanel.utils.BestLogger;
+import com.xl1te.modpanel.utils.VersionCheck;
 import com.xl1te.modpanel.web.WebServer;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -18,8 +19,17 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        String version = this.getDescription().getVersion();
+
         this.bestLogger = new BestLogger(this);
         new Metrics(this, 28745);
+
+        try {
+            VersionCheck updater = new VersionCheck(new BestLogger(this), version);
+            updater.checkForUpdates();
+        } catch (Exception e) {
+            bestLogger.severe("Failed to check for updates: " + e.getMessage());
+        }
 
         try {
             PluginConfig.updateConfig(this);
