@@ -31,18 +31,40 @@
             <version>1.19-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.4.240</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.13.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin</artifactId>
+            <version>6.7.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.dv8tion</groupId>
+            <artifactId>JDA</artifactId>
+            <version>6.3.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tchristofferson</groupId>
+            <artifactId>ConfigUpdater</artifactId>
+            <version>2.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>7.0.2</version>
             <scope>provided</scope>
         </dependency>
 
@@ -51,12 +73,6 @@
             <artifactId>bstats-bukkit</artifactId>
             <version>3.2.1</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.javalin</groupId>
-            <artifactId>javalin</artifactId>
-            <version>6.7.0</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

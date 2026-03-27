@@ -1,6 +1,9 @@
 package com.xl1te.modpanel;
 
+import com.xl1te.modpanel.commands.MPCommand;
 import com.xl1te.modpanel.config.PluginConfig;
+import com.xl1te.modpanel.database.DatabaseManager;
+import com.xl1te.modpanel.discord.DiscordBot;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.web.WebServer;
 import org.bstats.bukkit.Metrics;
@@ -10,10 +13,12 @@ public class Main extends JavaPlugin {
 
     private BestLogger bestLogger;
     private WebServer webServer;
+    private DiscordBot discordBot;
+    private DatabaseManager databaseManager;
 
     @Override
     public void onEnable() {
-        this.bestLogger = new BestLogger(getLogger());
+        this.bestLogger = new BestLogger(this);
         new Metrics(this, 28745);
 
         try {
@@ -25,8 +30,16 @@ public class Main extends JavaPlugin {
         }
 
         try {
+            this.databaseManager = new DatabaseManager(this, bestLogger);
+            this.databaseManager.initialize();
+
             this.webServer = new WebServer(this, bestLogger);
             this.webServer.startWebServer();
+
+            this.discordBot = new DiscordBot(this, bestLogger);
+            this.discordBot.startBot();
+
+            getCommand("mp").setExecutor(new MPCommand(this, bestLogger));
 
             bestLogger.info("ModPanel enabled successfully!");
         } catch (Exception e) {
@@ -40,10 +53,24 @@ public class Main extends JavaPlugin {
         if (webServer != null) {
             webServer.stopWebServer();
         }
+        if (discordBot != null) {
+            discordBot.stopBot();
+        }
+        if (databaseManager != null) {
+            databaseManager.shutdown();
+        }
         bestLogger.info("ModPanel has been disabled.");
     }
 
     public BestLogger getBestLogger() {
         return bestLogger;
+    }
+
+    public WebServer getWebServer() {
+        return webServer;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
     }
 }

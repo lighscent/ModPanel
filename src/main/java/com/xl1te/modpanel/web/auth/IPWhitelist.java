@@ -1,26 +1,29 @@
 package com.xl1te.modpanel.web.auth;
 
+import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.utils.BestLogger;
 import io.javalin.http.Context;
+import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.Handler;
-import java.util.List;
 
 public class IPWhitelist implements Handler {
 
-    private final List<String> allowedIPs;
+    private final DatabaseManager databaseManager;
     private final BestLogger logger;
 
-    public IPWhitelist(List<String> allowedIPs, BestLogger logger) {
-        this.allowedIPs = allowedIPs;
+    public IPWhitelist(DatabaseManager databaseManager, BestLogger logger) {
+        this.databaseManager = databaseManager;
         this.logger = logger;
     }
 
     @Override
     public void handle(Context ctx) throws Exception {
         String clientIP = getClientIP(ctx);
-        if (!allowedIPs.contains(clientIP)) {
-            logger.warning("Access denied for IP: " + clientIP);
-            throw new io.javalin.http.ForbiddenResponse("Access denied. Your IP is not whitelisted.");
+
+        boolean allowed = databaseManager.getWebWhitelistRepository().exists(clientIP);
+        if (!allowed) {
+            logger.warning("Access denied for non-whitelisted IP: " + clientIP);
+            throw new ForbiddenResponse("Access denied. Your IP is not whitelisted.");
         }
     }
 

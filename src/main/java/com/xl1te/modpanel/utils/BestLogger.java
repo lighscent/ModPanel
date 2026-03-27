@@ -1,24 +1,37 @@
 package com.xl1te.modpanel.utils;
 
-import java.util.logging.Logger;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BestLogger {
-    private final Logger logger;
+    private final JavaPlugin plugin;
 
-    public BestLogger(Logger logger) {
-        this.logger = logger;
+    public BestLogger(JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    public String processMessage(String message) {
+        if (plugin.getConfig().getBoolean("web-server.ip-privacy", false)) {
+            // Match IPv4 addresses and mask the last two octets
+            Pattern pattern = Pattern.compile("\\b(\\d{1,3}\\.\\d{1,3})\\.\\d{1,3}\\.\\d{1,3}\\b");
+            Matcher matcher = pattern.matcher(message);
+            return matcher.replaceAll("$1.x.x");
+        }
+        return message;
     }
 
     public void info(String message) {
-        logger.info("\u001B[32m" + message + "\u001B[0m");
+        plugin.getLogger().info("\u001B[32m" + processMessage(message) + "\u001B[0m");
     }
 
     public void warning(String message) {
-        logger.warning("\u001B[33m" + message + "\u001B[0m");
+        plugin.getLogger().warning("\u001B[33m" + processMessage(message) + "\u001B[0m");
     }
 
     public void severe(String message) {
-        logger.severe("\u001B[31m" + message + "\u001B[0m");
+        plugin.getLogger().severe("\u001B[31m" + processMessage(message) + "\u001B[0m");
     }
 
 }

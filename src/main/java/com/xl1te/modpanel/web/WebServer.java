@@ -5,7 +5,6 @@ import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.web.auth.IPWhitelist;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
-import java.util.List;
 
 public class WebServer {
 
@@ -20,10 +19,10 @@ public class WebServer {
 
     public void startWebServer() {
         int port = plugin.getConfig().getInt("server.port", 9999);
-        List<String> allowedIPs = plugin.getConfig().getStringList("server.whitelist.ips");
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(plugin.getClass().getClassLoader());
+
         try {
             app = Javalin.create(config -> {
                 config.staticFiles.add(staticFileConfig -> {
@@ -32,18 +31,17 @@ public class WebServer {
                 });
             });
 
-            app.before(new IPWhitelist(allowedIPs, logger));
+            app.before("/", new IPWhitelist(plugin.getDatabaseManager(), logger));
+            app.before("/index.html", new IPWhitelist(plugin.getDatabaseManager(), logger));
 
-            app.get("/", ctx -> ctx.result("ModPanel Javalin server is running"));
+            app.get("/", ctx -> {
+                String clientIP = getClientIP(ctx);
+                logger.info("Received request from IP: " + clientIP);
+                ctx.result("Welcome to ModPanel Web Interface!");
+            });
 
             app.start(port);
             logger.info("Web server started on port: " + port);
-
-            if (!allowedIPs.isEmpty()) {
-                logger.info("IP whitelisting is enabled. Allowed IPs: " + allowedIPs);
-            } else {
-                logger.warning("IP whitelisting is active but NO IPs are allowed. ALL access will be blocked!");
-            }
         } catch (Exception e) {
             logger.severe("Error during server startup: " + e.getMessage());
             e.printStackTrace();
@@ -57,5 +55,13 @@ public class WebServer {
             app.stop();
             logger.info("Web server stopped.");
         }
+    }
+
+    private String getClientIP(io.javalin.http.Context ctx) {
+        String xForwardedFor = ctx.header("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return ctx.req().getRemoteAddr();
     }
 }

@@ -1,8 +1,9 @@
-# Web Server #
-server:
-  # Port for the web server to listen on
-  port: 9999 # default: 9999
+# ModPanel Configuration File
 
-  # IP Whitelist - only these IPs can access the web server
-  whitelist:
-    ips: [] # List of allowed IP addresses, e.g. ["192.168.1.100", "10.0.0.1"]
+# Web server configuration
+web-server:
+  port: 9999 # Port for the web server default is 9999
+  ip-privacy: true # If true, only the first two digits of the IP address will be showed on logs (e.g. 192.168.x.x)
+
+# Discord bot configuration
+discord_token: "none" # Your Discord bot token here (default is "none" which disables the bot)
