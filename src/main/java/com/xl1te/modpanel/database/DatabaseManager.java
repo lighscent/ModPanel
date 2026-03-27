@@ -4,6 +4,7 @@ import com.xl1te.modpanel.Main;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.xl1te.modpanel.database.repository.IPBanRepository;
 import com.xl1te.modpanel.database.repository.WebWhitelistRepository;
 
 import java.io.File;
@@ -16,6 +17,7 @@ public class DatabaseManager {
     private final BestLogger logger;
     private HikariDataSource dataSource;
     private WebWhitelistRepository webWhitelistRepository;
+    private IPBanRepository ipBanRepository;
 
     public DatabaseManager(Main plugin, BestLogger logger) {
         this.plugin = plugin;
@@ -52,6 +54,7 @@ public class DatabaseManager {
 
             createTables();
             this.webWhitelistRepository = new WebWhitelistRepository(this);
+            this.ipBanRepository = new IPBanRepository(this);
 
         } catch (Exception e) {
             logger.severe("Failed to initialize database: " + e.getMessage());
@@ -68,7 +71,17 @@ public class DatabaseManager {
                 )
                 """);
 
-        logger.info("Database table web_whitelist created/verified.");
+        executeUpdate("""
+                CREATE TABLE IF NOT EXISTS web_bans (
+                    ip VARCHAR(45) PRIMARY KEY,
+                    failure_count INT NOT NULL DEFAULT 0,
+                    ban_count INT NOT NULL DEFAULT 0,
+                    banned_until TIMESTAMP NULL,
+                    permanent BOOLEAN NOT NULL DEFAULT FALSE
+                )
+                """);
+
+        logger.info("Database tables web_whitelist and web_bans created/verified.");
     }
 
     public WebWhitelistRepository getWebWhitelistRepository() {
@@ -76,6 +89,13 @@ public class DatabaseManager {
             throw new IllegalStateException("DatabaseManager not initialized");
         }
         return webWhitelistRepository;
+    }
+
+    public IPBanRepository getIpBanRepository() {
+        if (ipBanRepository == null) {
+            throw new IllegalStateException("DatabaseManager not initialized");
+        }
+        return ipBanRepository;
     }
 
     public void shutdown() {

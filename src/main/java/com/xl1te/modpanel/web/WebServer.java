@@ -2,6 +2,7 @@ package com.xl1te.modpanel.web;
 
 import com.xl1te.modpanel.Main;
 import com.xl1te.modpanel.utils.BestLogger;
+import com.xl1te.modpanel.web.auth.IPBanManager;
 import com.xl1te.modpanel.web.auth.IPWhitelist;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
@@ -31,8 +32,10 @@ public class WebServer {
                 });
             });
 
-            app.before("/", new IPWhitelist(plugin.getDatabaseManager(), logger));
-            app.before("/index.html", new IPWhitelist(plugin.getDatabaseManager(), logger));
+            IPBanManager banManager = new IPBanManager(plugin, logger,
+                    plugin.getDatabaseManager().getIpBanRepository());
+            app.before("/", new IPWhitelist(banManager, plugin.getDatabaseManager(), logger));
+            app.before("/index.html", new IPWhitelist(banManager, plugin.getDatabaseManager(), logger));
 
             app.get("/", ctx -> {
                 String clientIP = getClientIP(ctx);
