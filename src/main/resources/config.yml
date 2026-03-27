@@ -1,0 +1,8 @@
+# Web Server #
+server:
+  # Port for the web server to listen on
+  port: 9999 # default: 9999
+
+  # IP Whitelist - only these IPs can access the web server
+  whitelist:
+    ips: [] # List of allowed IP addresses, e.g. ["192.168.1.100", "10.0.0.1"]

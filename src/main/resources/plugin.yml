@@ -1,0 +1,22 @@
+name: ModPanel
+version: 0.3.0
+main: com.xl1te.modpanel.Main
+api-version: 1.19
+description: A powerful moderation panel for your Minecraft server.
+author: xl1te
+url: https://github.com/lighscent/ModPanel
+load: STARTUP
+commands:
+  mp:
+    description: Main command for ModPanel
+    usage: /<command> <subcommand>
+    aliases: [modpanel]
+    permission: mp.admin
+permissions:
+  mp.admin:
+    description: Allows access to ModPanel admin commands
+    default: op
+libraries:
+  - com.h2database:h2:2.4.240
+  - com.google.code.gson:gson:2.13.2
+  - io.javalin:javalin:6.7.0
