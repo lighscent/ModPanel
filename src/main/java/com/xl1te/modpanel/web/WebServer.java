@@ -34,14 +34,13 @@ public class WebServer {
 
             IPBanManager banManager = new IPBanManager(plugin, logger,
                     plugin.getDatabaseManager().getIpBanRepository());
-            app.before("/", new IPWhitelist(banManager, plugin.getDatabaseManager(), logger));
-            app.before("/index.html", new IPWhitelist(banManager, plugin.getDatabaseManager(), logger));
+            HtmlController htmlController = new HtmlController(logger);
+            IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger);
+            app.before("/", whitelist);
+            app.before("/{page}", whitelist);
 
-            app.get("/", ctx -> {
-                String clientIP = getClientIP(ctx);
-                logger.info("Received request from IP: " + clientIP);
-                ctx.result("Welcome to ModPanel Web Interface!");
-            });
+            app.get("/", ctx -> ctx.redirect("/index"));
+            app.get("/{page}", htmlController::serveHtml);
 
             app.start(port);
             logger.info("Web server started on port: " + port);
@@ -58,13 +57,5 @@ public class WebServer {
             app.stop();
             logger.info("Web server stopped.");
         }
-    }
-
-    private String getClientIP(io.javalin.http.Context ctx) {
-        String xForwardedFor = ctx.header("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return ctx.req().getRemoteAddr();
     }
 }
