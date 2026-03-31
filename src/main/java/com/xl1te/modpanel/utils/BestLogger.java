@@ -17,7 +17,7 @@ public class BestLogger {
             // Match IPv4 addresses and mask the last two octets
             Pattern pattern = Pattern.compile("\\b(\\d{1,3}\\.\\d{1,3})\\.\\d{1,3}\\.\\d{1,3}\\b");
             Matcher matcher = pattern.matcher(message);
-            return matcher.replaceAll("$1.x.x");
+            return matcher.replaceAll("$1.XX.XX");
         }
         return message;
     }
