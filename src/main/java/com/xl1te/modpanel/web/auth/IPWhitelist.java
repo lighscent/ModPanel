@@ -23,6 +23,12 @@ public class IPWhitelist implements Handler {
         String clientIP = getClientIP(ctx);
         logger.info("Incoming connection attempt from " + clientIP);
 
+        boolean allowed = databaseManager.getWebWhitelistRepository().exists(clientIP);
+        if (allowed) {
+            logger.info("IP " + clientIP + " allowed by whitelist.");
+            return; // Skip rate limiting for whitelisted IPs
+        }
+
         try {
             banManager.checkConnection(clientIP);
         } catch (IPBanException e) {
@@ -30,13 +36,8 @@ public class IPWhitelist implements Handler {
             throw new ForbiddenResponse(e.getMessage());
         }
 
-        boolean allowed = databaseManager.getWebWhitelistRepository().exists(clientIP);
-        if (!allowed) {
-            logger.warning("Access denied for non-whitelisted IP: " + clientIP);
-            throw new ForbiddenResponse("Access denied. Your IP is not whitelisted.");
-        }
-
-        logger.info("IP " + clientIP + " allowed by whitelist.");
+        logger.warning("Access denied for non-whitelisted IP: " + clientIP);
+        throw new ForbiddenResponse("Access denied. Your IP is not whitelisted.");
     }
 
     private String getClientIP(Context ctx) {
