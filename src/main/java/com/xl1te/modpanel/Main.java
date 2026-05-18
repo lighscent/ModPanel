@@ -52,6 +52,8 @@ public class Main extends JavaPlugin {
             this.databaseManager = new DatabaseManager(this, bestLogger);
             this.databaseManager.initialize();
 
+            createDefaultAdmin();
+
             this.webServer = new WebServer(this, bestLogger);
             this.webServer.startWebServer();
 
@@ -64,6 +66,32 @@ public class Main extends JavaPlugin {
         } catch (Exception e) {
             bestLogger.severe("Fatal error during server startup: " + e.getMessage());
             getServer().getPluginManager().disablePlugin(this);
+        }
+    }
+
+    private void createDefaultAdmin() {
+        try {
+            var repo = databaseManager.getUserRepository();
+            var perms = databaseManager.getPermissionRepository();
+            if (repo.findByUsername("admin").isEmpty()) {
+                var admin = new com.xl1te.modpanel.database.models.User(
+                    0, "admin",
+                    com.xl1te.modpanel.web.auth.PasswordHasher.hash("admin123"),
+                    "admin", true,
+                    java.time.LocalDateTime.now(), null
+                );
+                repo.create(admin);
+                int adminId = repo.findByUsername("admin").get().getId();
+                perms.grant(adminId, "modpanel.stats");
+                perms.grant(adminId, "modpanel.players");
+                perms.grant(adminId, "modpanel.player.detail");
+                perms.grant(adminId, "modpanel.users.view");
+                perms.grant(adminId, "modpanel.users.manage");
+                perms.grant(adminId, "modpanel.whitelist");
+                bestLogger.info("Default admin user created (admin / admin123) - CHANGE THIS PASSWORD!");
+            }
+        } catch (Exception e) {
+            bestLogger.severe("Failed to create default admin: " + e.getMessage());
         }
     }
 

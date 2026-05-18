@@ -2,6 +2,7 @@ package com.xl1te.modpanel.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.xl1te.modpanel.utils.GsonProvider;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,7 +20,7 @@ public class VersionCheck {
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = GsonProvider.get();
 
     public VersionCheck(BestLogger logger, String currentVersion, ExecutorService executor) {
         this.logger = logger;

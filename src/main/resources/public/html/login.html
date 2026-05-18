@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ModPanel - Login</title>
+    <link rel="stylesheet" href="../css/colors.css" />
+    <link rel="stylesheet" href="../css/index.css" />
+    <style>
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #0a0a0f;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .login-box {
+        background: linear-gradient(135deg, #111118 0%, #1a1a24 100%);
+        border: 1px solid #1e1e2e;
+        border-radius: 16px;
+        padding: 3rem 2.5rem;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 8px 48px rgba(0,0,0,0.6);
+      }
+      .login-logo {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0a0a0f;
+      }
+      .login-title {
+        text-align: center;
+        color: #e2e8f0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+      }
+      .login-subtitle {
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.85rem;
+        margin-bottom: 2rem;
+      }
+      .form-group { margin-bottom: 1rem; }
+      .form-group label {
+        display: block;
+        color: #9ca3af;
+        font-size: 0.8rem;
+        margin-bottom: 0.4rem;
+        font-weight: 500;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: #1a1a24;
+        border: 1px solid #2a2a3a;
+        border-radius: 10px;
+        color: #e2e8f0;
+        font-size: 0.9rem;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+      }
+      .form-group input:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+      }
+      .btn-login {
+        width: 100%;
+        padding: 0.8rem;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #0a0a0f;
+        font-weight: 700;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .btn-login:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 20px rgba(16,185,129,0.3);
+      }
+      .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+      .error-msg {
+        color: #ef4444;
+        font-size: 0.8rem;
+        text-align: center;
+        margin: 1rem 0 0;
+        display: none;
+      }
+      .loading-spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #0a0a0f;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div class="login-box">
+      <div class="login-logo">M</div>
+      <div class="login-title">ModPanel</div>
+      <div class="login-subtitle">Moderation Control Panel</div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn-login" id="loginBtn">
+          <span id="loginText">Sign In</span>
+          <div class="loading-spinner" id="spinner"></div>
+        </button>
+      </form>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+    <script>
+      const loginForm = document.getElementById('loginForm');
+      const loginBtn = document.getElementById('loginBtn');
+      const loginText = document.getElementById('loginText');
+      const spinner = document.getElementById('spinner');
+      const errorMsg = document.getElementById('errorMsg');
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMsg.style.display = 'none';
+        loginBtn.disabled = true;
+        loginText.style.display = 'none';
+        spinner.style.display = 'block';
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: document.getElementById('username').value,
+              password: document.getElementById('password').value
+            })
+          });
+          const data = await res.json();
+
+          if (res.status === 200 && data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            localStorage.setItem('role', data.role);
+            window.location.href = '/dashboard';
+          } else {
+            showError(data.error || 'Login failed');
+          }
+        } catch (err) {
+          showError('Connection error');
+        } finally {
+          loginBtn.disabled = false;
+          loginText.style.display = 'block';
+          spinner.style.display = 'none';
+        }
+      });
+
+      function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+      }
+
+      if (localStorage.getItem('token')) {
+        window.location.href = '/dashboard';
+      }
+    </script>
+  </body>
+</html>

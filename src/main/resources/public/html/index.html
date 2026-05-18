@@ -6,9 +6,11 @@
     <title>ModPanel</title>
     <link rel="stylesheet" href="../css/colors.css" />
     <link rel="stylesheet" href="../css/index.css" />
+    <style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0f;flex-direction:column;gap:1rem;}
+    .spinner{width:32px;height:32px;border:3px solid #1e1e2e;border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+    <script>if(!localStorage.getItem('token')){window.location.href='/login';}else{window.location.href='/dashboard';}</script>
   </head>
-  <body>
-    <div id="app"></div>
-    <script src="../js/script.js"></script>
-  </body>
+  <body><div class="spinner"></div><div style="color:#6b7280;font-size:.85rem">Loading...</div></body>
 </html>

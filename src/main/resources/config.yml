@@ -2,26 +2,26 @@
 
 # Web server configuration
 web-server:
-  # Port for the web server default is 9999
-  port: 9999 
-  # If true, trust X-Forwarded-For header (enable only if behind a reverse proxy like Nginx)
-  proxy-mode: false 
-  # If true, only the first two digits of the IP address will be showed on logs (e.g. 192.168.x.x)
-  ip-privacy: true 
-
-  # Connection spam protection 
-  # ! DO NOT DISABLE OR CHANGE SETTINGS UNLESS YOU KNOW WHAT YOU ARE DOING !
+  port: 9999
+  proxy-mode: false
+  ip-privacy: true
   connection-limit:
-    # Do not disable this unless you know what you are doing (default is true)
-    enabled: true 
-    # Number of tries before banning an IP (default is 10)
-    ban-after: 10 
-    # Ban duration in seconds (default is 300 seconds = 5 minutes)
-    ban-duration: 600 
-    # Number of bans before permanently banning an IP (default is 2)
-    permanent-ban-threshold: 2 
+    enabled: true
+    ban-after: 10
+    ban-duration: 600
+    permanent-ban-threshold: 2
 
-# Discord bot configuration
+# Storage configuration
+# Supported types: h2 (default), mysql, mariadb
+storage:
+  type: h2
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    database: modpanel
+    username: root
+    password: ""
+    use-ssl: false
 
-# Your Discord bot token here (default is "none" which disables the bot)
-discord_token: "none" 
+# Discord bot (set token to "none" to disable)
+discord_token: "none"

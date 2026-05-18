@@ -30,123 +30,67 @@ public class PluginConfig {
                     .lines().collect(Collectors.toList());
         }
 
-        List<String> existingLines = new ArrayList<>(Files.readAllLines(configFile.toPath()));
-
-        Set<String> existingKeys = extractKeys(existingLines);
+        List<String> lines = new ArrayList<>(Files.readAllLines(configFile.toPath()));
         List<ConfigBlock> defaultBlocks = parseBlocks(defaultLines);
 
-        Set<String> missingPaths = defaultBlocks.stream()
-                .map(ConfigBlock::keyPath)
-                .filter(p -> !existingKeys.contains(p))
-                .collect(Collectors.toSet());
-
-        List<Insertion> insertions = new ArrayList<>();
         for (int i = 0; i < defaultBlocks.size(); i++) {
             ConfigBlock block = defaultBlocks.get(i);
-            if (!existingKeys.contains(block.keyPath)) {
-                if (!hasMissingAncestor(block.keyPath, missingPaths)) {
-                    List<String> sectionLines = extractSection(defaultBlocks, block.keyPath);
-                    int pos = findInsertPosition(existingLines, defaultBlocks, i, existingKeys);
-                    insertions.add(new Insertion(pos, sectionLines));
+            if (!keyExists(lines, block.keyPath)) {
+                if (!hasMissingAncestor(block.keyPath, defaultBlocks, i)) {
+                    List<String> section = extractSection(defaultBlocks, i);
+                    int pos = findInsertPosition(lines, defaultBlocks, i);
+                    lines.add(Math.min(pos, lines.size()), section.get(0));
+                    int inserted = 1;
+                    for (int j = 1; j < section.size(); j++) {
+                        lines.add(Math.min(pos + inserted, lines.size()), section.get(j));
+                        inserted++;
+                    }
                 }
             }
         }
 
-        if (!insertions.isEmpty()) {
-            insertions.sort((a, b) -> Integer.compare(a.position, b.position));
-            List<String> merged = new ArrayList<>(existingLines);
-            int offset = 0;
-            for (Insertion ins : insertions) {
-                int pos = Math.min(ins.position + offset, merged.size());
-                merged.addAll(pos, ins.lines);
-                offset += ins.lines.size();
-            }
-            Files.write(configFile.toPath(), merged);
-        }
-
+        Files.write(configFile.toPath(), lines);
         plugin.reloadConfig();
     }
 
-    private static boolean hasMissingAncestor(String keyPath, Set<String> missingPaths) {
-        while (keyPath.contains(".")) {
-            keyPath = keyPath.substring(0, keyPath.lastIndexOf('.'));
-            if (missingPaths.contains(keyPath)) return true;
+    private static boolean hasMissingAncestor(String keyPath, List<ConfigBlock> blocks, int upTo) {
+        String base = keyPath;
+        while (base.contains(".")) {
+            base = base.substring(0, base.lastIndexOf('.'));
+            for (int i = 0; i < upTo; i++) {
+                if (blocks.get(i).keyPath.equals(base)) {
+                    if (!keyExistsWithBlocks(blocks, i, base)) return true;
+                    break;
+                }
+            }
         }
         return false;
     }
 
-    private static List<String> extractSection(List<ConfigBlock> allBlocks, String sectionRootPath) {
-        int startIndex = -1;
-        for (int i = 0; i < allBlocks.size(); i++) {
-            if (allBlocks.get(i).keyPath.equals(sectionRootPath)) {
-                startIndex = i;
-                break;
-            }
+    private static boolean keyExistsWithBlocks(List<ConfigBlock> blocks, int end, String keyPath) {
+        for (int i = 0; i < end; i++) {
+            if (blocks.get(i).keyPath.equals(keyPath)) return true;
         }
-        if (startIndex < 0) return List.of();
+        return false;
+    }
 
+    private static List<String> extractSection(List<ConfigBlock> blocks, int fromIndex) {
         List<String> result = new ArrayList<>();
-        int rootLevel = allBlocks.get(startIndex).level;
+        int rootLevel = blocks.get(fromIndex).level;
 
-        for (int i = startIndex; i < allBlocks.size(); i++) {
-            ConfigBlock block = allBlocks.get(i);
-            if (i > startIndex && block.level <= rootLevel) break;
-            result.addAll(block.lines());
+        for (int i = fromIndex; i < blocks.size(); i++) {
+            ConfigBlock b = blocks.get(i);
+            if (i > fromIndex && b.level <= rootLevel) break;
+            result.add(b.dataLine());
         }
-
         return result;
     }
 
-    private static boolean sameParent(String keyPathA, String keyPathB) {
-        if (!keyPathA.contains(".") && !keyPathB.contains(".")) return true;
-        if (keyPathA.contains(".") && keyPathB.contains(".")) {
-            return keyPathA.substring(0, keyPathA.lastIndexOf('.'))
-                    .equals(keyPathB.substring(0, keyPathB.lastIndexOf('.')));
-        }
-        return false;
+    private static boolean keyExists(List<String> lines, String keyPath) {
+        return findLineIndex(lines, keyPath) >= 0;
     }
 
-    private static int findInsertPosition(
-            List<String> existingLines,
-            List<ConfigBlock> allDefaultBlocks,
-            int blockIndex,
-            Set<String> existingKeys
-    ) {
-        ConfigBlock block = allDefaultBlocks.get(blockIndex);
-        int level = block.level;
-
-        // Scan backward for the previous existing sibling at the same level
-        for (int i = blockIndex - 1; i >= 0; i--) {
-            ConfigBlock prev = allDefaultBlocks.get(i);
-            if (prev.level == level && sameParent(prev.keyPath, block.keyPath)) {
-                if (existingKeys.contains(prev.keyPath)) {
-                    int end = findExistingBlockEnd(existingLines, prev.keyPath);
-                    return end >= 0 ? end : existingLines.size();
-                }
-            }
-        }
-
-        // Scan forward for the next existing sibling at the same level
-        for (int i = blockIndex + 1; i < allDefaultBlocks.size(); i++) {
-            ConfigBlock next = allDefaultBlocks.get(i);
-            if (next.level == level && sameParent(next.keyPath, block.keyPath)) {
-                if (existingKeys.contains(next.keyPath)) {
-                    int start = findExistingBlockStart(existingLines, next.keyPath);
-                    return start >= 0 ? start : existingLines.size();
-                }
-            }
-        }
-
-        // No siblings exist at this level
-        if (level == 0) return existingLines.size();
-
-        // Find parent in existing lines and insert after its last child
-        String parentPath = block.keyPath.substring(0, block.keyPath.lastIndexOf('.'));
-        int parentEnd = findExistingBlockEnd(existingLines, parentPath);
-        return parentEnd >= 0 ? parentEnd : existingLines.size();
-    }
-
-    private static int findExistingBlockStart(List<String> lines, String keyPath) {
+    private static int findLineIndex(List<String> lines, String keyPath) {
         Map<Integer, String> levelKey = new HashMap<>();
         for (int i = 0; i < lines.size(); i++) {
             String trimmed = lines.get(i).trim();
@@ -155,67 +99,85 @@ public class PluginConfig {
                 int level = countIndent(lines.get(i)) / INDENT_STEP;
                 String key = trimmed.substring(0, trimmed.indexOf(':')).trim();
                 levelKey.put(level, key);
-
-                String currentPath = buildPath(levelKey, level);
-                if (currentPath.equals(keyPath)) return i;
+                if (buildPath(levelKey, level).equals(keyPath)) return i;
             }
         }
         return -1;
     }
 
-    private static int findExistingBlockEnd(List<String> lines, String keyPath) {
-        int start = findExistingBlockStart(lines, keyPath);
+    private static int findBlockEnd(List<String> lines, String keyPath) {
+        int start = findLineIndex(lines, keyPath);
         if (start < 0) return -1;
-
-        String[] parts = keyPath.split("\\.");
-        int keyLevel = parts.length - 1;
-
+        int targetLevel = keyPath.split("\\.").length - 1;
         for (int i = start + 1; i < lines.size(); i++) {
-            String trimmed = lines.get(i).trim();
-            if (!trimmed.isEmpty() && !trimmed.startsWith("#") && trimmed.contains(":")) {
+            String t = lines.get(i).trim();
+            if (t.isEmpty() || t.startsWith("#")) continue;
+            if (t.contains(":")) {
                 int level = countIndent(lines.get(i)) / INDENT_STEP;
-                if (level <= keyLevel) return i;
+                if (level <= targetLevel) return i;
             }
         }
         return lines.size();
     }
 
-    private static String buildPath(Map<Integer, String> levelKey, int upToLevel) {
-        StringBuilder path = new StringBuilder();
-        for (int i = 0; i <= upToLevel; i++) {
-            String k = levelKey.get(i);
-            if (k != null) {
-                if (path.length() > 0) path.append(".");
-                path.append(k);
+    private static int findInsertPosition(List<String> lines, List<ConfigBlock> allBlocks, int blockIndex) {
+        ConfigBlock block = allBlocks.get(blockIndex);
+        int level = block.level;
+        String keyPath = block.keyPath;
+
+        // Find previous existing sibling in default order
+        for (int i = blockIndex - 1; i >= 0; i--) {
+            ConfigBlock prev = allBlocks.get(i);
+            if (prev.level == level && sameParent(prev.keyPath, keyPath)) {
+                int lineIdx = findLineIndex(lines, prev.keyPath);
+                if (lineIdx >= 0) {
+                    int end = findBlockEnd(lines, prev.keyPath);
+                    return end >= 0 ? end : lines.size();
+                }
             }
         }
-        return path.toString();
+
+        // Find next existing sibling in default order
+        for (int i = blockIndex + 1; i < allBlocks.size(); i++) {
+            ConfigBlock next = allBlocks.get(i);
+            if (next.level == level && sameParent(next.keyPath, keyPath)) {
+                int lineIdx = findLineIndex(lines, next.keyPath);
+                if (lineIdx >= 0) return lineIdx;
+            }
+        }
+
+        if (level == 0) return lines.size();
+
+        String parentPath = keyPath.substring(0, keyPath.lastIndexOf('.'));
+        int parentEnd = findBlockEnd(lines, parentPath);
+        return parentEnd >= 0 ? parentEnd : lines.size();
+    }
+
+    private static boolean sameParent(String a, String b) {
+        if (!a.contains(".") && !b.contains(".")) return true;
+        if (!a.contains(".") || !b.contains(".")) return false;
+        return a.substring(0, a.lastIndexOf('.')).equals(b.substring(0, b.lastIndexOf('.')));
+    }
+
+    private static String buildPath(Map<Integer, String> levelKey, int level) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i <= level; i++) {
+            String k = levelKey.get(i);
+            if (k != null) {
+                if (sb.length() > 0) sb.append(".");
+                sb.append(k);
+            }
+        }
+        return sb.toString();
     }
 
     private static int countIndent(String line) {
         int count = 0;
-        for (int i = 0; i < line.length(); i++) {
-            if (line.charAt(i) == ' ') count++;
+        for (char c : line.toCharArray()) {
+            if (c == ' ') count++;
             else break;
         }
         return count;
-    }
-
-    private static Set<String> extractKeys(List<String> lines) {
-        Set<String> keys = new HashSet<>();
-        Map<Integer, String> levelKey = new HashMap<>();
-
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
-            if (trimmed.contains(":")) {
-                int level = countIndent(line) / INDENT_STEP;
-                String key = trimmed.substring(0, trimmed.indexOf(':')).trim();
-                levelKey.put(level, key);
-                keys.add(buildPath(levelKey, level));
-            }
-        }
-        return keys;
     }
 
     private static List<ConfigBlock> parseBlocks(List<String> lines) {
@@ -230,11 +192,9 @@ public class PluginConfig {
                 continue;
             }
             if (trimmed.contains(":")) {
-                int indent = countIndent(line);
-                int level = indent / INDENT_STEP;
+                int level = countIndent(line) / INDENT_STEP;
                 String key = trimmed.substring(0, trimmed.indexOf(':')).trim();
                 levelKey.put(level, key);
-
                 blocks.add(new ConfigBlock(buildPath(levelKey, level), level, new ArrayList<>(comments), line));
                 comments.clear();
             }
@@ -242,13 +202,5 @@ public class PluginConfig {
         return blocks;
     }
 
-    private record ConfigBlock(String keyPath, int level, List<String> comments, String dataLine) {
-        public List<String> lines() {
-            List<String> result = new ArrayList<>(comments);
-            result.add(dataLine);
-            return result;
-        }
-    }
-
-    private record Insertion(int position, List<String> lines) {}
+    private record ConfigBlock(String keyPath, int level, List<String> comments, String dataLine) {}
 }
