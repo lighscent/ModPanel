@@ -10,22 +10,31 @@ import com.xl1te.modpanel.web.WebServer;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class Main extends JavaPlugin {
 
     private BestLogger bestLogger;
     private WebServer webServer;
     private DiscordBot discordBot;
     private DatabaseManager databaseManager;
+    private ExecutorService asyncExecutor;
 
     @Override
     public void onEnable() {
         String version = this.getDescription().getVersion();
 
         this.bestLogger = new BestLogger(this);
+        this.asyncExecutor = Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(r, "ModPanel-Async");
+            t.setDaemon(true);
+            return t;
+        });
         new Metrics(this, 28745);
 
         try {
-            VersionCheck updater = new VersionCheck(new BestLogger(this), version);
+            VersionCheck updater = new VersionCheck(bestLogger, version, asyncExecutor);
             updater.checkForUpdates();
         } catch (Exception e) {
             bestLogger.severe("Failed to check for updates: " + e.getMessage());
@@ -46,7 +55,7 @@ public class Main extends JavaPlugin {
             this.webServer = new WebServer(this, bestLogger);
             this.webServer.startWebServer();
 
-            this.discordBot = new DiscordBot(this, bestLogger);
+            this.discordBot = new DiscordBot(this, bestLogger, asyncExecutor);
             this.discordBot.startBot();
 
             getCommand("mp").setExecutor(new MPCommand(this, bestLogger));
@@ -69,7 +78,16 @@ public class Main extends JavaPlugin {
         if (databaseManager != null) {
             databaseManager.shutdown();
         }
-        bestLogger.info("ModPanel has been disabled.");
+        if (asyncExecutor != null) {
+            asyncExecutor.shutdownNow();
+        }
+        if (bestLogger != null) {
+            bestLogger.info("ModPanel has been disabled.");
+        }
+    }
+
+    public ExecutorService getAsyncExecutor() {
+        return asyncExecutor;
     }
 
     public BestLogger getBestLogger() {

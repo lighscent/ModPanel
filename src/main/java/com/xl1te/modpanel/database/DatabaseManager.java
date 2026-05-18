@@ -58,7 +58,6 @@ public class DatabaseManager {
 
         } catch (Exception e) {
             logger.severe("Failed to initialize database: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

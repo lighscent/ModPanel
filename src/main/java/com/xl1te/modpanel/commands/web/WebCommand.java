@@ -207,7 +207,6 @@ public class WebCommand {
             String message = e.getMessage() == null ? "Unexpected error" : e.getMessage();
             sendMessage(sender, "§cDatabase error: " + message);
             logger.severe("Web whitelist operation failed: " + message);
-            e.printStackTrace();
             return true;
         }
     }

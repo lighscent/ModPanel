@@ -7,9 +7,11 @@ import java.io.InputStream;
 public class HtmlController {
 
     private final BestLogger logger;
+    private final boolean proxyMode;
 
-    public HtmlController(BestLogger logger) {
+    public HtmlController(BestLogger logger, boolean proxyMode) {
         this.logger = logger;
+        this.proxyMode = proxyMode;
     }
 
     public void serveHtml(Context ctx) {
@@ -33,9 +35,11 @@ public class HtmlController {
     }
 
     private String getClientIP(Context ctx) {
-        String xForwardedFor = ctx.header("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
+        if (proxyMode) {
+            String xForwardedFor = ctx.header("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+                return xForwardedFor.split(",")[0].trim();
+            }
         }
         return ctx.req().getRemoteAddr();
     }

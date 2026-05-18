@@ -1,0 +1,31 @@
+:root {
+
+    /* Backgrounds */
+    --bg-base: #0f1117;
+    --bg-surface: #181b24;
+    --bg-elevated: #1f2330;
+    --bg-hover: #272b3a;
+
+    /* Textes */
+    --text-primary: #e8ecf4;
+    --text-secondary: #8b93a8;
+    --text-muted: #4e5568;
+
+    /* Accent — Émeraude */
+    --accent: #4de073;
+    --accent-dim: #2ea34f;
+    --accent-glow: #4de07330;
+
+    /* États */
+    --success: #4de073;
+    --warning: #ffc940;
+    --error: #ff4757;
+    --info: #4fc3f7;
+
+    /* Bordures */
+    --border: #252936;
+    --border-light: #2e3345;
+
+    /* Ombres */
+    --shadow: 0 4px 16px #00000080;
+}

@@ -3,6 +3,7 @@
 # Web server configuration
 web-server:
   port: 9999 # Port for the web server default is 9999
+  proxy-mode: false # If true, trust X-Forwarded-For header (enable only if behind a reverse proxy like Nginx)
   ip-privacy: true # If true, only the first two digits of the IP address will be showed on logs (e.g. 192.168.x.x)
 
   # Connection spam protection ! DO NOT DISABLE UNLESS YOU KNOW WHAT YOU ARE DOING !

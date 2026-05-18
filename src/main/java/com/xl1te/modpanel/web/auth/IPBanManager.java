@@ -1,6 +1,7 @@
 package com.xl1te.modpanel.web.auth;
 
 import com.xl1te.modpanel.utils.BestLogger;
+import com.xl1te.modpanel.utils.ExpiringCache;
 import com.xl1te.modpanel.database.repository.IPBanRepository;
 import com.xl1te.modpanel.database.models.IPBanEntry;
 
@@ -11,16 +12,21 @@ import java.time.Duration;
 import java.time.Instant;
 
 public class IPBanManager {
+
+    private static final long BAN_CACHE_TTL_MS = 5_000;
+
     private final boolean enabled;
     private final int banAfter;
     private final int banDurationSeconds;
     private final int permanentBanThreshold;
     private final BestLogger logger;
     private final IPBanRepository banRepository;
+    private final ExpiringCache<String, Boolean> banCache;
 
     public IPBanManager(JavaPlugin plugin, BestLogger logger, IPBanRepository banRepository) {
         this.logger = logger;
         this.banRepository = banRepository;
+        this.banCache = new ExpiringCache<>(BAN_CACHE_TTL_MS);
         this.enabled = plugin.getConfig().getBoolean("web-server.connection-limit.enabled", true);
         this.banAfter = plugin.getConfig().getInt("web-server.connection-limit.ban-after", 10);
         this.banDurationSeconds = plugin.getConfig().getInt("web-server.connection-limit.ban-duration", 600);
@@ -94,24 +100,36 @@ public class IPBanManager {
     }
 
     public boolean isBanned(String clientIP) {
+        Boolean cached = banCache.get(clientIP);
+        if (cached != null) {
+            return cached;
+        }
         try {
             IPBanEntry entry = banRepository.findByIp(clientIP).orElse(null);
             if (entry == null) {
+                banCache.put(clientIP, false);
                 return false;
             }
             if (entry.isPermanent()) {
+                banCache.put(clientIP, true);
                 return true;
             }
             if (entry.getBannedUntil() != null && entry.getBannedUntil().isAfter(Instant.now())) {
+                banCache.put(clientIP, true);
                 return true;
             }
             if (entry.getBannedUntil() != null && !entry.getBannedUntil().isAfter(Instant.now())) {
                 banRepository.save(new IPBanEntry(clientIP, 0, entry.getBanCount(), null, false));
             }
+            banCache.put(clientIP, false);
             return false;
         } catch (SQLException e) {
             logger.warning("Failed to evaluate ban status for " + clientIP + ": " + e.getMessage());
             return false;
         }
+    }
+
+    public void invalidateCache(String ip) {
+        banCache.invalidate(ip);
     }
 }

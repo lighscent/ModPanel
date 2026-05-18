@@ -8,16 +8,23 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 public class VersionCheck {
 
     private final BestLogger logger;
     private final String currentVersion;
+    private final ExecutorService executor;
     private static final String GITHUB_API_URL = "https://api.github.com/repos/lighscent/ModPanel/tags";
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
+    private static final Gson GSON = new Gson();
 
-    public VersionCheck(BestLogger logger, String currentVersion) {
+    public VersionCheck(BestLogger logger, String currentVersion, ExecutorService executor) {
         this.logger = logger;
         this.currentVersion = currentVersion;
+        this.executor = executor;
     }
 
     public void checkForUpdates() {
@@ -32,7 +39,7 @@ public class VersionCheck {
                 logger.severe(" Current version is: " + currentVersion + " and latest is: " + latest);
                 logger.severe(" Download: https://modrinth.com/plugin/modpanel");
             }
-        });
+        }, executor);
     }
 
     private boolean isNewer(String local, String remote) {
@@ -61,10 +68,6 @@ public class VersionCheck {
 
     private String getLatestVersion() {
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(5))
-                    .build();
-
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(GITHUB_API_URL))
                     .header("Accept", "application/vnd.github.v3+json")
@@ -72,10 +75,10 @@ public class VersionCheck {
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                JsonArray tags = new Gson().fromJson(response.body(), JsonArray.class);
+                JsonArray tags = GSON.fromJson(response.body(), JsonArray.class);
                 if (tags != null && tags.size() > 0) {
                     return tags.get(0).getAsJsonObject().get("name").getAsString();
                 }

@@ -19,7 +19,8 @@ public class WebServer {
     }
 
     public void startWebServer() {
-        int port = plugin.getConfig().getInt("server.port", 9999);
+        int port = plugin.getConfig().getInt("web-server.port", 9999);
+        boolean proxyMode = plugin.getConfig().getBoolean("web-server.proxy-mode", false);
 
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(plugin.getClass().getClassLoader());
@@ -34,8 +35,8 @@ public class WebServer {
 
             IPBanManager banManager = new IPBanManager(plugin, logger,
                     plugin.getDatabaseManager().getIpBanRepository());
-            HtmlController htmlController = new HtmlController(logger);
-            IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger);
+            HtmlController htmlController = new HtmlController(logger, proxyMode);
+            IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger, proxyMode);
             app.before("/", whitelist);
             app.before("/{page}", whitelist);
 
@@ -46,7 +47,6 @@ public class WebServer {
             logger.info("Web server started on port: " + port);
         } catch (Exception e) {
             logger.severe("Error during server startup: " + e.getMessage());
-            e.printStackTrace();
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
         }

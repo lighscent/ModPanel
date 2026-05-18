@@ -6,15 +6,20 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+
 public class DiscordBot extends ListenerAdapter {
 
     private final Main plugin;
     private final BestLogger logger;
+    private final ExecutorService executor;
     private JDA jda;
 
-    public DiscordBot(Main plugin, BestLogger logger) {
+    public DiscordBot(Main plugin, BestLogger logger, ExecutorService executor) {
         this.plugin = plugin;
         this.logger = logger;
+        this.executor = executor;
     }
 
     public void startBot() {
@@ -24,15 +29,24 @@ public class DiscordBot extends ListenerAdapter {
             return;
         }
 
-        try {
-            jda = JDABuilder.createDefault(token)
-                    .addEventListeners(this)
-                    .build();
-            jda.awaitReady();
-            logger.info("Discord bot started successfully.");
-        } catch (Exception e) {
-            logger.severe("Failed to start Discord bot: " + e.getMessage());
-        }
+        String finalToken = token;
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                JDA built = JDABuilder.createDefault(finalToken)
+                        .addEventListeners(this)
+                        .build();
+                built.awaitReady();
+                return built;
+            } catch (Exception e) {
+                logger.severe("Failed to start Discord bot: " + e.getMessage());
+                return null;
+            }
+        }, executor).thenAcceptAsync(built -> {
+            if (built != null) {
+                this.jda = built;
+                logger.info("Discord bot started successfully.");
+            }
+        });
     }
 
     public void stopBot() {

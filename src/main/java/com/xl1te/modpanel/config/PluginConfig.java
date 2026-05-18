@@ -9,15 +9,11 @@ import java.util.Collections;
 
 public class PluginConfig {
 
-    public static void updateConfig(JavaPlugin plugin) {
+    public static void updateConfig(JavaPlugin plugin) throws IOException {
         plugin.saveDefaultConfig();
 
         File configFile = new File(plugin.getDataFolder(), "config.yml");
-        try {
-            ConfigUpdater.update(plugin, "config.yml", configFile, Collections.emptyList());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        ConfigUpdater.update(plugin, "config.yml", configFile, Collections.emptyList());
 
         plugin.reloadConfig();
     }
