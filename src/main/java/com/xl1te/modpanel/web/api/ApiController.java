@@ -68,6 +68,7 @@ public class ApiController implements Handler {
             switch (path) {
                 case "/api/auth/login" -> handleLogin(ctx);
                 case "/api/auth/logout" -> handleLogout(ctx);
+                case "/api/auth/password" -> handlePasswordChange(ctx);
                 case "/api/stats" -> handleStats(ctx);
                 case "/api/players" -> handlePlayers(ctx);
                 case "/api/players/detail" -> handlePlayerDetail(ctx);
@@ -121,6 +122,11 @@ public class ApiController implements Handler {
             return;
         }
         loginLimiter.reset(key);
+        if (repo.isPasswordChangeRequired(user.getId())) {
+            ctx.status(403).result(gson().toJson(Map.of(
+                    "error", "Password change required", "mustChangePassword", true)));
+            return;
+        }
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
         ctx.result(gson().toJson(Map.of("token", token, "username", user.getUsername(), "role", user.getRole())));
@@ -131,6 +137,49 @@ public class ApiController implements Handler {
         if (auth != null && auth.startsWith("Bearer ")) {
             sessionManager.removeSession(auth.substring(7));
         }
+        ctx.result("{\"ok\":true}");
+    }
+
+    /**
+     * Changement de mot de passe sans session (premier login forcé) : prouve la
+     * connaissance du mot de passe actuel. Soumis au même limiteur que le login.
+     */
+    private void handlePasswordChange(Context ctx) throws Exception {
+        Map<String, Object> body = jsonBody(ctx);
+        String username = str(body, "username");
+        String currentPassword = str(body, "currentPassword");
+        String newPassword = str(body, "newPassword");
+        if (username == null || username.isBlank() || currentPassword == null || currentPassword.isBlank()
+                || newPassword == null || newPassword.isBlank()) {
+            ctx.status(400).result("{\"error\":\"Username, currentPassword and newPassword required\"}");
+            return;
+        }
+        if (username.length() > MAX_LOGIN_NAME_LEN || newPassword.length() > MAX_PASSWORD_LEN) {
+            ctx.status(400).result("{\"error\":\"Invalid username or password format\"}");
+            return;
+        }
+        if (newPassword.equals(currentPassword)) {
+            ctx.status(400).result("{\"error\":\"New password must differ from the current one\"}");
+            return;
+        }
+        String key = getClientIP(ctx) + "\0" + username.toLowerCase(java.util.Locale.ROOT);
+        if (loginLimiter.isBlocked(key)) {
+            ctx.header("Retry-After", String.valueOf(loginLimiter.retryAfterSeconds(key)));
+            ctx.status(429).result("{\"error\":\"Too many login attempts, try again later\"}");
+            return;
+        }
+        var repo = plugin.getDatabaseManager().getUserRepository();
+        User user = repo.findByUsername(username).orElse(null);
+        String hash = (user != null) ? user.getPasswordHash() : PasswordHasher.DUMMY_HASH;
+        if (user == null || !user.isEnabled() || !PasswordHasher.verify(currentPassword, hash)) {
+            loginLimiter.recordFailure(key);
+            ctx.status(401).result("{\"error\":\"Invalid credentials\"}");
+            return;
+        }
+        loginLimiter.reset(key);
+        repo.update(new User(user.getId(), user.getUsername(), PasswordHasher.hash(newPassword),
+                user.getRole(), user.isEnabled(), user.getCreatedAt(), user.getLastLogin()));
+        repo.clearPasswordChangeRequired(user.getId());
         ctx.result("{\"ok\":true}");
     }
 
@@ -377,6 +426,10 @@ public class ApiController implements Handler {
         }
         repo.update(new User(id, user.getUsername(), passwordHash, role, enabled, user.getCreatedAt(),
                 user.getLastLogin()));
+        if (newPassword != null) {
+            // Mot de passe imposé par un tiers : à changer au prochain login.
+            repo.setPasswordChangeRequired(id);
+        }
         ctx.result("{\"ok\":true}");
     }
 

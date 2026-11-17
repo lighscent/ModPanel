@@ -126,6 +126,10 @@ public class DatabaseManager {
                 "PRIMARY KEY (user_id, permission), " +
 				(constraintClause("user_permissions", "user_id", "users(id)")) + ")");
 
+        executeUpdate("CREATE TABLE IF NOT EXISTS password_change_required (" +
+                "user_id INT PRIMARY KEY, " +
+                (constraintClause("password_change_required", "user_id", "users(id)")) + ")");
+
         logger.info("Database tables created/verified.");
     }
 

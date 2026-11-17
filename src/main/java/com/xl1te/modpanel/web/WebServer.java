@@ -72,6 +72,7 @@ public class WebServer {
 
                 routes.post("/api/auth/login", apiController::handle);
                 routes.post("/api/auth/logout", apiController::handle);
+                routes.post("/api/auth/password", apiController::handle);
                 routes.get("/api/stats", wrapApi(apiController));
                 routes.get("/api/players", wrapApi(apiController));
                 routes.get("/api/players/detail", wrapApi(apiController));

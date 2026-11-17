@@ -95,6 +95,35 @@ public class UserRepository {
         }
     }
 
+    public boolean isPasswordChangeRequired(int userId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM password_change_required WHERE user_id = ?";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        }
+    }
+
+    public void setPasswordChangeRequired(int userId) throws SQLException {
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO password_change_required (user_id) VALUES (?)")) {
+            stmt.setInt(1, userId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            if (DatabaseManager.isDuplicateKey(e)) return;
+            throw e;
+        }
+    }
+
+    public void clearPasswordChangeRequired(int userId) throws SQLException {
+        String sql = "DELETE FROM password_change_required WHERE user_id = ?";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            stmt.executeUpdate();
+        }
+    }
+
     private User mapRow(ResultSet rs) throws SQLException {
         return new User(
             rs.getInt("id"), rs.getString("username"), rs.getString("password_hash"),
