@@ -38,7 +38,7 @@ public class WebServer {
             IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger, proxyMode,
                     plugin.getConfig().getBoolean("ip-whitelist-enabled", true),
                     plugin.getConfig().getStringList("ip-whitelist"));
-            ApiController apiController = new ApiController(plugin, sessionManager, logger);
+            ApiController apiController = new ApiController(plugin, sessionManager, logger, proxyMode);
 
             app = Javalin.create(config -> {
                 config.staticFiles.add(staticFileConfig -> {

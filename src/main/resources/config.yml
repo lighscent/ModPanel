@@ -10,6 +10,10 @@ web-server:
     ban-after: 10
     ban-duration: 600
     permanent-ban-threshold: 2
+  login-limit:
+    enabled: true
+    max-attempts: 5
+    window-seconds: 300
 
 # Extra IPs allowed to access the web panel, on top of the database whitelist
 # managed with /mp web whitelist. Set enabled to false to accept every IP.

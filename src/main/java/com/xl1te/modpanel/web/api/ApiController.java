@@ -7,6 +7,7 @@ import com.xl1te.modpanel.web.auth.PasswordHasher;
 import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.auth.SessionManager.Session;
 import com.xl1te.modpanel.web.auth.IPBanException;
+import com.xl1te.modpanel.web.auth.LoginRateLimiter;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.GsonProvider;
 import com.google.gson.reflect.TypeToken;
@@ -37,11 +38,18 @@ public class ApiController implements Handler {
     private final Main plugin;
     private final SessionManager sessionManager;
     private final BestLogger logger;
+    private final boolean proxyMode;
+    private final LoginRateLimiter loginLimiter;
 
-    public ApiController(Main plugin, SessionManager sessionManager, BestLogger logger) {
+    public ApiController(Main plugin, SessionManager sessionManager, BestLogger logger, boolean proxyMode) {
         this.plugin = plugin;
         this.sessionManager = sessionManager;
         this.logger = logger;
+        this.proxyMode = proxyMode;
+        this.loginLimiter = new LoginRateLimiter(
+                plugin.getConfig().getBoolean("web-server.login-limit.enabled", true),
+                plugin.getConfig().getInt("web-server.login-limit.max-attempts", 5),
+                plugin.getConfig().getLong("web-server.login-limit.window-seconds", 300));
     }
 
     @Override
@@ -74,27 +82,32 @@ public class ApiController implements Handler {
 
     private void handleLogin(Context ctx) throws Exception {
         Map<String, Object> body = jsonBody(ctx);
-        String username = body.get("username").toString();
-        String password = body.get("password").toString();
-        if (username.isBlank() || password.isBlank()) {
+        Object rawUsername = body.get("username");
+        Object rawPassword = body.get("password");
+        String username = rawUsername == null ? null : rawUsername.toString();
+        String password = rawPassword == null ? null : rawPassword.toString();
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
             ctx.status(400).result("{\"error\":\"Username and password required\"}");
+            return;
+        }
+        String key = getClientIP(ctx) + "\0" + username.toLowerCase(java.util.Locale.ROOT);
+        if (loginLimiter.isBlocked(key)) {
+            ctx.header("Retry-After", String.valueOf(loginLimiter.retryAfterSeconds(key)));
+            ctx.status(429).result("{\"error\":\"Too many login attempts, try again later\"}");
             return;
         }
         var repo = plugin.getDatabaseManager().getUserRepository();
         var userOpt = repo.findByUsername(username);
-        if (userOpt.isEmpty()) {
+        User user = userOpt.orElse(null);
+        // Toujours vérifier un hash (même factice) : temps de réponse uniforme,
+        // un seul message d'échec pour inconnu, désactivé ou mot de passe faux.
+        String hash = (user != null) ? user.getPasswordHash() : PasswordHasher.DUMMY_HASH;
+        if (user == null || !user.isEnabled() || !PasswordHasher.verify(password, hash)) {
+            loginLimiter.recordFailure(key);
             ctx.status(401).result("{\"error\":\"Invalid credentials\"}");
             return;
         }
-        User user = userOpt.get();
-        if (!user.isEnabled()) {
-            ctx.status(403).result("{\"error\":\"Account disabled\"}");
-            return;
-        }
-        if (!PasswordHasher.verify(password, user.getPasswordHash())) {
-            ctx.status(401).result("{\"error\":\"Invalid credentials\"}");
-            return;
-        }
+        loginLimiter.reset(key);
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
         ctx.result("{\"token\":\"" + token + "\",\"username\":\"" + user.getUsername() + "\",\"role\":\""
@@ -368,6 +381,16 @@ public class ApiController implements Handler {
         if (auth == null || !auth.startsWith("Bearer "))
             return null;
         return sessionManager.getSession(auth.substring(7));
+    }
+
+    private String getClientIP(Context ctx) {
+        if (proxyMode) {
+            String xForwardedFor = ctx.header("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+                return xForwardedFor.split(",")[0].trim();
+            }
+        }
+        return ctx.req().getRemoteAddr();
     }
 
     private boolean hasPermission(String username, String permission) {
