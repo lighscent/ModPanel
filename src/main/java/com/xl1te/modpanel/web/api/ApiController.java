@@ -9,17 +9,22 @@ import com.xl1te.modpanel.web.auth.SessionManager.Session;
 import com.xl1te.modpanel.web.auth.IPBanException;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.GsonProvider;
+import com.google.gson.reflect.TypeToken;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
 
+import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 public class ApiController implements Handler {
+
+    private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {}.getType();
 
     private final Main plugin;
     private final SessionManager sessionManager;
@@ -58,7 +63,7 @@ public class ApiController implements Handler {
     }
 
     private void handleLogin(Context ctx) throws Exception {
-        Map body = ctx.bodyAsClass(Map.class);
+        Map<String, Object> body = jsonBody(ctx);
         String username = body.get("username").toString();
         String password = body.get("password").toString();
         if (username.isBlank() || password.isBlank()) {
@@ -82,7 +87,8 @@ public class ApiController implements Handler {
         }
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
-        ctx.result("{\"token\":\"" + token + "\",\"username\":\"" + user.getUsername() + "\",\"role\":\"" + user.getRole() + "\"}");
+        ctx.result("{\"token\":\"" + token + "\",\"username\":\"" + user.getUsername() + "\",\"role\":\""
+                + user.getRole() + "\"}");
     }
 
     private void handleLogout(Context ctx) throws Exception {
@@ -94,20 +100,21 @@ public class ApiController implements Handler {
     }
 
     private void handleStats(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.stats")) return;
+        if (!requirePermission(ctx, "modpanel.stats"))
+            return;
         double tps = getTPS();
         ServerStats stats = new ServerStats(
-            plugin.getServer().getOnlinePlayers().size(),
-            plugin.getServer().getMaxPlayers(),
-            tps,
-            plugin.getServer().getVersion(),
-            plugin.getServer().getName()
-        );
+                plugin.getServer().getOnlinePlayers().size(),
+                plugin.getServer().getMaxPlayers(),
+                tps,
+                plugin.getServer().getVersion(),
+                plugin.getServer().getName());
         ctx.result(gson().toJson(stats));
     }
 
     private void handlePlayers(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.players")) return;
+        if (!requirePermission(ctx, "modpanel.players"))
+            return;
         List<Map<String, Object>> players = new ArrayList<>();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             Map<String, Object> p = new LinkedHashMap<>();
@@ -116,7 +123,7 @@ public class ApiController implements Handler {
             p.put("ip", player.getAddress().getAddress().getHostAddress());
             p.put("world", player.getWorld().getName());
             p.put("health", (int) player.getHealth());
-            p.put("maxHealth", (int) player.getMaxHealth());
+            p.put("maxHealth", (int) getMaxHealth(player));
             p.put("gamemode", player.getGameMode().name());
             p.put("ping", getPlayerPing(player));
             p.put("locale", player.getLocale());
@@ -130,7 +137,8 @@ public class ApiController implements Handler {
     }
 
     private void handlePlayerDetail(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.player.detail")) return;
+        if (!requirePermission(ctx, "modpanel.player.detail"))
+            return;
         String uuidStr = ctx.queryParam("uuid");
         if (uuidStr == null || uuidStr.isBlank()) {
             ctx.status(400).result("{\"error\":\"uuid query param required\"}");
@@ -161,7 +169,7 @@ public class ApiController implements Handler {
         detail.put("yaw", (double) player.getLocation().getYaw());
         detail.put("pitch", (double) player.getLocation().getPitch());
         detail.put("health", player.getHealth());
-        detail.put("maxHealth", player.getMaxHealth());
+        detail.put("maxHealth", getMaxHealth(player));
         detail.put("food", player.getFoodLevel());
         detail.put("saturation", (double) player.getSaturation());
         detail.put("gamemode", player.getGameMode().name());
@@ -223,23 +231,24 @@ public class ApiController implements Handler {
     }
 
     private void handleUsers(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.view")) return;
+        if (!requirePermission(ctx, "modpanel.users.view"))
+            return;
         List<User> users = plugin.getDatabaseManager().getUserRepository().list();
         List<Map<String, Object>> out = new ArrayList<>();
         for (User u : users) {
             out.add(Map.of(
-                "id", u.getId(), "username", u.getUsername(),
-                "role", u.getRole(), "enabled", u.isEnabled(),
-                "createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : "",
-                "lastLogin", u.getLastLogin() != null ? u.getLastLogin().toString() : ""
-            ));
+                    "id", u.getId(), "username", u.getUsername(),
+                    "role", u.getRole(), "enabled", u.isEnabled(),
+                    "createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : "",
+                    "lastLogin", u.getLastLogin() != null ? u.getLastLogin().toString() : ""));
         }
         ctx.result(gson().toJson(out));
     }
 
     private void handleUserCreate(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage")) return;
-        Map body = ctx.bodyAsClass(Map.class);
+        if (!requirePermission(ctx, "modpanel.users.manage"))
+            return;
+        Map<String, Object> body = jsonBody(ctx);
         String username = body.get("username").toString();
         String password = body.get("password").toString();
         String role = body.getOrDefault("role", "moderator").toString();
@@ -256,33 +265,41 @@ public class ApiController implements Handler {
     }
 
     private void handleUserUpdate(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage")) return;
-        Map body = ctx.bodyAsClass(Map.class);
+        if (!requirePermission(ctx, "modpanel.users.manage"))
+            return;
+        Map<String, Object> body = jsonBody(ctx);
         int id = Integer.parseInt(body.get("id").toString());
         var repo = plugin.getDatabaseManager().getUserRepository();
         User user = repo.findById(id).orElse(null);
-        if (user == null) { ctx.status(404).result("{\"error\":\"User not found\"}"); return; }
+        if (user == null) {
+            ctx.status(404).result("{\"error\":\"User not found\"}");
+            return;
+        }
         String role = body.getOrDefault("role", user.getRole()).toString();
-        boolean enabled = Boolean.parseBoolean(body.getOrDefault("enabled", String.valueOf(user.isEnabled())).toString());
+        boolean enabled = Boolean
+                .parseBoolean(body.getOrDefault("enabled", String.valueOf(user.isEnabled())).toString());
         String passwordHash = user.getPasswordHash();
         if (body.containsKey("password") && !body.get("password").toString().isBlank()) {
             passwordHash = PasswordHasher.hash(body.get("password").toString());
         }
-        repo.update(new User(id, user.getUsername(), passwordHash, role, enabled, user.getCreatedAt(), user.getLastLogin()));
+        repo.update(new User(id, user.getUsername(), passwordHash, role, enabled, user.getCreatedAt(),
+                user.getLastLogin()));
         ctx.result("{\"ok\":true}");
     }
 
     private void handleUserDelete(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage")) return;
-        Map body = ctx.bodyAsClass(Map.class);
+        if (!requirePermission(ctx, "modpanel.users.manage"))
+            return;
+        Map<String, Object> body = jsonBody(ctx);
         String username = body.get("username").toString();
         plugin.getDatabaseManager().getUserRepository().delete(username);
         ctx.result("{\"ok\":true}");
     }
 
     private void handlePermissions(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage")) return;
-        Map body = ctx.bodyAsClass(Map.class);
+        if (!requirePermission(ctx, "modpanel.users.manage"))
+            return;
+        Map<String, Object> body = jsonBody(ctx);
         int userId = Integer.parseInt(body.get("userId").toString());
         String action = body.get("action").toString();
         String permission = body.get("permission").toString();
@@ -295,14 +312,18 @@ public class ApiController implements Handler {
     }
 
     private void handleWhitelist(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.whitelist")) return;
+        if (!requirePermission(ctx, "modpanel.whitelist"))
+            return;
         var repo = plugin.getDatabaseManager().getWebWhitelistRepository();
         ctx.result(gson().toJson(repo.list()));
     }
 
     private boolean requirePermission(Context ctx, String permission) throws Exception {
         Session session = getAuthenticatedSession(ctx);
-        if (session == null) { ctx.status(401).result("{\"error\":\"Unauthorized\"}"); return false; }
+        if (session == null) {
+            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
+            return false;
+        }
         if (!hasPermission(session.username(), permission)) {
             ctx.status(403).result("{\"error\":\"Permission denied\"}");
             return false;
@@ -313,7 +334,8 @@ public class ApiController implements Handler {
 
     private Session getAuthenticatedSession(Context ctx) {
         String auth = ctx.header("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) return null;
+        if (auth == null || !auth.startsWith("Bearer "))
+            return null;
         return sessionManager.getSession(auth.substring(7));
     }
 
@@ -322,30 +344,51 @@ public class ApiController implements Handler {
             var repo = plugin.getDatabaseManager().getUserRepository();
             var perms = plugin.getDatabaseManager().getPermissionRepository();
             User user = repo.findByUsername(username).orElse(null);
-            if (user == null) return false;
+            if (user == null)
+                return false;
             Set<String> userPerms = perms.getPermissions(user.getId());
-            if (user.getRole().equals("admin") || user.getRole().equals("owner")) return true;
+            if (user.getRole().equals("admin") || user.getRole().equals("owner"))
+                return true;
             return userPerms.contains(permission);
-        } catch (Exception e) { return false; }
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private double getTPS() {
         try {
             Object provider = plugin.getServer().getClass().getMethod("getTPS").invoke(plugin.getServer());
-            if (provider instanceof double[] arr) return arr[0];
+            if (provider instanceof double[] arr)
+                return arr[0];
             if (provider instanceof List<?> list && !list.isEmpty()) {
                 Object val = list.get(0);
-                if (val instanceof Double) return (Double) val;
+                if (val instanceof Double)
+                    return (Double) val;
             }
             return 20.0;
-        } catch (Exception e) { return 20.0; }
+        } catch (Exception e) {
+            return 20.0;
+        }
+    }
+
+    private double getMaxHealth(Player player) {
+        var attribute = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        return attribute != null ? attribute.getValue() : 20.0;
     }
 
     private int getPlayerPing(Player player) {
         try {
             return player.getPing();
-        } catch (Exception e) { return -1; }
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
-    private com.google.gson.Gson gson() { return GsonProvider.get(); }
+    private Map<String, Object> jsonBody(Context ctx) {
+        return ctx.bodyAsClass(BODY_TYPE);
+    }
+
+    private com.google.gson.Gson gson() {
+        return GsonProvider.get();
+    }
 }
