@@ -38,7 +38,7 @@ public class WebServer {
             IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger, proxyMode,
                     plugin.getConfig().getBoolean("ip-whitelist-enabled", true),
                     plugin.getConfig().getStringList("ip-whitelist"));
-            ApiController apiController = new ApiController(plugin, sessionManager, logger);
+            ApiController apiController = new ApiController(plugin, sessionManager, logger, proxyMode);
 
             app = Javalin.create(config -> {
                 config.staticFiles.add(staticFileConfig -> {
@@ -72,6 +72,7 @@ public class WebServer {
 
                 routes.post("/api/auth/login", apiController::handle);
                 routes.post("/api/auth/logout", apiController::handle);
+                routes.post("/api/auth/password", apiController::handle);
                 routes.get("/api/stats", wrapApi(apiController));
                 routes.get("/api/players", wrapApi(apiController));
                 routes.get("/api/players/detail", wrapApi(apiController));

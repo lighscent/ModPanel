@@ -126,6 +126,10 @@ public class DatabaseManager {
                 "PRIMARY KEY (user_id, permission), " +
 				(constraintClause("user_permissions", "user_id", "users(id)")) + ")");
 
+        executeUpdate("CREATE TABLE IF NOT EXISTS password_change_required (" +
+                "user_id INT PRIMARY KEY, " +
+                (constraintClause("password_change_required", "user_id", "users(id)")) + ")");
+
         logger.info("Database tables created/verified.");
     }
 
@@ -137,6 +141,16 @@ public class DatabaseManager {
     }
 
     public Dialect getDialect() { return dialect; }
+
+    /**
+     * Vrai si l'exception est une violation de clé unique/doublon (et rien d'autre :
+     * pas une violation de FK). Codes relevés : 1062 côté MariaDB/MySQL, 23505 côté H2.
+     */
+    public static boolean isDuplicateKey(SQLException e) {
+        if (e == null) return false;
+        int code = e.getErrorCode();
+        return code == 1062 || code == 23505;
+    }
 
     public WebWhitelistRepository getWebWhitelistRepository() {
         if (webWhitelistRepository == null) throw new IllegalStateException("DatabaseManager not initialized");

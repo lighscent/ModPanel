@@ -7,6 +7,7 @@ import com.xl1te.modpanel.web.auth.PasswordHasher;
 import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.auth.SessionManager.Session;
 import com.xl1te.modpanel.web.auth.IPBanException;
+import com.xl1te.modpanel.web.auth.LoginRateLimiter;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.GsonProvider;
 import com.google.gson.reflect.TypeToken;
@@ -16,6 +17,11 @@ import io.javalin.http.Handler;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -24,16 +30,35 @@ import org.bukkit.inventory.PlayerInventory;
 
 public class ApiController implements Handler {
 
-    private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {}.getType();
+    private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
+
+    /** Délai max d'attente du thread principal (collecte Bukkit). */
+    private static final long SYNC_TIMEOUT_SECONDS = 5;
+
+    // Bornes alignées sur le schéma (users.username VARCHAR(50), role VARCHAR(20),
+    // user_permissions.permission VARCHAR(100)) + garde-fou mot de passe.
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("[A-Za-z0-9_.-]{3,50}");
+    private static final Pattern ROLE_PATTERN = Pattern.compile("[A-Za-z0-9_-]{1,20}");
+    private static final Pattern PERMISSION_PATTERN = Pattern.compile("[A-Za-z0-9._*-]{1,100}");
+    private static final int MAX_PASSWORD_LEN = 128;
+    private static final int MAX_LOGIN_NAME_LEN = 50;
 
     private final Main plugin;
     private final SessionManager sessionManager;
     private final BestLogger logger;
+    private final boolean proxyMode;
+    private final LoginRateLimiter loginLimiter;
 
-    public ApiController(Main plugin, SessionManager sessionManager, BestLogger logger) {
+    public ApiController(Main plugin, SessionManager sessionManager, BestLogger logger, boolean proxyMode) {
         this.plugin = plugin;
         this.sessionManager = sessionManager;
         this.logger = logger;
+        this.proxyMode = proxyMode;
+        this.loginLimiter = new LoginRateLimiter(
+                plugin.getConfig().getBoolean("web-server.login-limit.enabled", true),
+                plugin.getConfig().getInt("web-server.login-limit.max-attempts", 5),
+                plugin.getConfig().getLong("web-server.login-limit.window-seconds", 300));
     }
 
     @Override
@@ -43,6 +68,7 @@ public class ApiController implements Handler {
             switch (path) {
                 case "/api/auth/login" -> handleLogin(ctx);
                 case "/api/auth/logout" -> handleLogout(ctx);
+                case "/api/auth/password" -> handlePasswordChange(ctx);
                 case "/api/stats" -> handleStats(ctx);
                 case "/api/players" -> handlePlayers(ctx);
                 case "/api/players/detail" -> handlePlayerDetail(ctx);
@@ -56,6 +82,8 @@ public class ApiController implements Handler {
             }
         } catch (IPBanException e) {
             ctx.status(429).result("{\"error\":\"" + e.getMessage() + "\"}");
+        } catch (TimeoutException e) {
+            ctx.status(503).result("{\"error\":\"Server busy, try again\"}");
         } catch (Exception e) {
             logger.severe("API error on " + path + ": " + e.getMessage());
             ctx.status(500).result("{\"error\":\"Internal server error\"}");
@@ -64,31 +92,44 @@ public class ApiController implements Handler {
 
     private void handleLogin(Context ctx) throws Exception {
         Map<String, Object> body = jsonBody(ctx);
-        String username = body.get("username").toString();
-        String password = body.get("password").toString();
-        if (username.isBlank() || password.isBlank()) {
+        Object rawUsername = body.get("username");
+        Object rawPassword = body.get("password");
+        String username = rawUsername == null ? null : rawUsername.toString();
+        String password = rawPassword == null ? null : rawPassword.toString();
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
             ctx.status(400).result("{\"error\":\"Username and password required\"}");
+            return;
+        }
+        if (username.length() > MAX_LOGIN_NAME_LEN || password.length() > MAX_PASSWORD_LEN) {
+            ctx.status(400).result("{\"error\":\"Invalid username or password format\"}");
+            return;
+        }
+        String key = getClientIP(ctx) + "\0" + username.toLowerCase(java.util.Locale.ROOT);
+        if (loginLimiter.isBlocked(key)) {
+            ctx.header("Retry-After", String.valueOf(loginLimiter.retryAfterSeconds(key)));
+            ctx.status(429).result("{\"error\":\"Too many login attempts, try again later\"}");
             return;
         }
         var repo = plugin.getDatabaseManager().getUserRepository();
         var userOpt = repo.findByUsername(username);
-        if (userOpt.isEmpty()) {
+        User user = userOpt.orElse(null);
+        // Toujours vérifier un hash (même factice) : temps de réponse uniforme,
+        // un seul message d'échec pour inconnu, désactivé ou mot de passe faux.
+        String hash = (user != null) ? user.getPasswordHash() : PasswordHasher.DUMMY_HASH;
+        if (user == null || !user.isEnabled() || !PasswordHasher.verify(password, hash)) {
+            loginLimiter.recordFailure(key);
             ctx.status(401).result("{\"error\":\"Invalid credentials\"}");
             return;
         }
-        User user = userOpt.get();
-        if (!user.isEnabled()) {
-            ctx.status(403).result("{\"error\":\"Account disabled\"}");
-            return;
-        }
-        if (!PasswordHasher.verify(password, user.getPasswordHash())) {
-            ctx.status(401).result("{\"error\":\"Invalid credentials\"}");
+        loginLimiter.reset(key);
+        if (repo.isPasswordChangeRequired(user.getId())) {
+            ctx.status(403).result(gson().toJson(Map.of(
+                    "error", "Password change required", "mustChangePassword", true)));
             return;
         }
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
-        ctx.result("{\"token\":\"" + token + "\",\"username\":\"" + user.getUsername() + "\",\"role\":\""
-                + user.getRole() + "\"}");
+        ctx.result(gson().toJson(Map.of("token", token, "username", user.getUsername(), "role", user.getRole())));
     }
 
     private void handleLogout(Context ctx) throws Exception {
@@ -99,40 +140,85 @@ public class ApiController implements Handler {
         ctx.result("{\"ok\":true}");
     }
 
+    /**
+     * Changement de mot de passe sans session (premier login forcé) : prouve la
+     * connaissance du mot de passe actuel. Soumis au même limiteur que le login.
+     */
+    private void handlePasswordChange(Context ctx) throws Exception {
+        Map<String, Object> body = jsonBody(ctx);
+        String username = str(body, "username");
+        String currentPassword = str(body, "currentPassword");
+        String newPassword = str(body, "newPassword");
+        if (username == null || username.isBlank() || currentPassword == null || currentPassword.isBlank()
+                || newPassword == null || newPassword.isBlank()) {
+            ctx.status(400).result("{\"error\":\"Username, currentPassword and newPassword required\"}");
+            return;
+        }
+        if (username.length() > MAX_LOGIN_NAME_LEN || newPassword.length() > MAX_PASSWORD_LEN) {
+            ctx.status(400).result("{\"error\":\"Invalid username or password format\"}");
+            return;
+        }
+        if (newPassword.equals(currentPassword)) {
+            ctx.status(400).result("{\"error\":\"New password must differ from the current one\"}");
+            return;
+        }
+        String key = getClientIP(ctx) + "\0" + username.toLowerCase(java.util.Locale.ROOT);
+        if (loginLimiter.isBlocked(key)) {
+            ctx.header("Retry-After", String.valueOf(loginLimiter.retryAfterSeconds(key)));
+            ctx.status(429).result("{\"error\":\"Too many login attempts, try again later\"}");
+            return;
+        }
+        var repo = plugin.getDatabaseManager().getUserRepository();
+        User user = repo.findByUsername(username).orElse(null);
+        String hash = (user != null) ? user.getPasswordHash() : PasswordHasher.DUMMY_HASH;
+        if (user == null || !user.isEnabled() || !PasswordHasher.verify(currentPassword, hash)) {
+            loginLimiter.recordFailure(key);
+            ctx.status(401).result("{\"error\":\"Invalid credentials\"}");
+            return;
+        }
+        loginLimiter.reset(key);
+        repo.update(new User(user.getId(), user.getUsername(), PasswordHasher.hash(newPassword),
+                user.getRole(), user.isEnabled(), user.getCreatedAt(), user.getLastLogin()));
+        repo.clearPasswordChangeRequired(user.getId());
+        ctx.result("{\"ok\":true}");
+    }
+
     private void handleStats(Context ctx) throws Exception {
         if (!requirePermission(ctx, "modpanel.stats"))
             return;
-        double tps = getTPS();
-        ServerStats stats = new ServerStats(
+        ServerStats stats = callSync(() -> new ServerStats(
                 plugin.getServer().getOnlinePlayers().size(),
                 plugin.getServer().getMaxPlayers(),
-                tps,
+                getTPS(),
                 plugin.getServer().getVersion(),
-                plugin.getServer().getName());
+                plugin.getServer().getName()));
         ctx.result(gson().toJson(stats));
     }
 
     private void handlePlayers(Context ctx) throws Exception {
         if (!requirePermission(ctx, "modpanel.players"))
             return;
-        List<Map<String, Object>> players = new ArrayList<>();
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            Map<String, Object> p = new LinkedHashMap<>();
-            p.put("name", player.getName());
-            p.put("uuid", player.getUniqueId().toString());
-            p.put("ip", player.getAddress().getAddress().getHostAddress());
-            p.put("world", player.getWorld().getName());
-            p.put("health", (int) player.getHealth());
-            p.put("maxHealth", (int) getMaxHealth(player));
-            p.put("gamemode", player.getGameMode().name());
-            p.put("ping", getPlayerPing(player));
-            p.put("locale", player.getLocale());
-            p.put("displayName", player.getDisplayName());
-            p.put("x", (int) player.getLocation().getX());
-            p.put("y", (int) player.getLocation().getY());
-            p.put("z", (int) player.getLocation().getZ());
-            players.add(p);
-        }
+        List<Map<String, Object>> players = callSync(() -> {
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                Map<String, Object> p = new LinkedHashMap<>();
+                p.put("name", player.getName());
+                p.put("uuid", player.getUniqueId().toString());
+                p.put("ip", player.getAddress().getAddress().getHostAddress());
+                p.put("world", player.getWorld().getName());
+                p.put("health", (int) player.getHealth());
+                p.put("maxHealth", (int) getMaxHealth(player));
+                p.put("gamemode", player.getGameMode().name());
+                p.put("ping", getPlayerPing(player));
+                p.put("locale", player.getLocale());
+                p.put("displayName", player.getDisplayName());
+                p.put("x", (int) player.getLocation().getX());
+                p.put("y", (int) player.getLocation().getY());
+                p.put("z", (int) player.getLocation().getZ());
+                list.add(p);
+            }
+            return list;
+        });
         ctx.result(gson().toJson(players));
     }
 
@@ -151,82 +237,85 @@ public class ApiController implements Handler {
             ctx.status(400).result("{\"error\":\"Invalid UUID\"}");
             return;
         }
-        Player player = plugin.getServer().getPlayer(uuid);
-        if (player == null) {
+        Map<String, Object> detail = callSync(() -> {
+            Player player = plugin.getServer().getPlayer(uuid);
+            if (player == null)
+                return null;
+            Map<String, Object> d = new LinkedHashMap<>();
+            d.put("name", player.getName());
+            d.put("uuid", player.getUniqueId().toString());
+            d.put("displayName", player.getDisplayName());
+            d.put("ip", player.getAddress().getAddress().getHostAddress());
+            d.put("world", player.getWorld().getName());
+            d.put("x", player.getLocation().getX());
+            d.put("y", player.getLocation().getY());
+            d.put("z", player.getLocation().getZ());
+            d.put("yaw", (double) player.getLocation().getYaw());
+            d.put("pitch", (double) player.getLocation().getPitch());
+            d.put("health", player.getHealth());
+            d.put("maxHealth", getMaxHealth(player));
+            d.put("food", player.getFoodLevel());
+            d.put("saturation", (double) player.getSaturation());
+            d.put("gamemode", player.getGameMode().name());
+            d.put("ping", getPlayerPing(player));
+            d.put("locale", player.getLocale());
+            d.put("level", player.getLevel());
+            d.put("exp", player.getExp());
+            d.put("totalExperience", player.getTotalExperience());
+            d.put("walkSpeed", player.getWalkSpeed());
+            d.put("flySpeed", player.getFlySpeed());
+            d.put("isFlying", player.isFlying());
+            d.put("isOp", player.isOp());
+
+            // Potion effects
+            List<Map<String, Object>> effects = new ArrayList<>();
+            player.getActivePotionEffects().forEach(effect -> {
+                Map<String, Object> eff = new LinkedHashMap<>();
+                eff.put("type", effect.getType().getName());
+                eff.put("amplifier", effect.getAmplifier());
+                eff.put("duration", effect.getDuration() / 20); // ticks to seconds
+                effects.add(eff);
+            });
+            d.put("potionEffects", effects);
+
+            // Inventory
+            PlayerInventory inv = player.getInventory();
+            List<Map<String, Object>> inventory = new ArrayList<>();
+            for (int i = 0; i < inv.getSize(); i++) {
+                ItemStack item = inv.getItem(i);
+                if (item != null && !item.getType().isAir()) {
+                    Map<String, Object> slot = new LinkedHashMap<>();
+                    slot.put("slot", i);
+                    slot.put("type", item.getType().name());
+                    slot.put("amount", item.getAmount());
+                    inventory.add(slot);
+                }
+            }
+            d.put("inventory", inventory);
+
+            // Armor
+            List<Map<String, Object>> armor = new ArrayList<>();
+            for (ItemStack a : inv.getArmorContents()) {
+                if (a != null && !a.getType().isAir()) {
+                    Map<String, Object> piece = new LinkedHashMap<>();
+                    piece.put("type", a.getType().name());
+                    piece.put("amount", a.getAmount());
+                    armor.add(piece);
+                }
+            }
+            d.put("armor", armor);
+
+            // Offhand
+            ItemStack offhand = inv.getItemInOffHand();
+            if (offhand != null && !offhand.getType().isAir()) {
+                d.put("offhand", offhand.getType().name());
+            }
+            return d;
+        });
+        if (detail == null) {
             ctx.status(404).result("{\"error\":\"Player not found or offline\"}");
             return;
         }
-
-        Map<String, Object> detail = new LinkedHashMap<>();
-        detail.put("name", player.getName());
-        detail.put("uuid", player.getUniqueId().toString());
-        detail.put("displayName", player.getDisplayName());
-        detail.put("ip", player.getAddress().getAddress().getHostAddress());
-        detail.put("world", player.getWorld().getName());
-        detail.put("x", player.getLocation().getX());
-        detail.put("y", player.getLocation().getY());
-        detail.put("z", player.getLocation().getZ());
-        detail.put("yaw", (double) player.getLocation().getYaw());
-        detail.put("pitch", (double) player.getLocation().getPitch());
-        detail.put("health", player.getHealth());
-        detail.put("maxHealth", getMaxHealth(player));
-        detail.put("food", player.getFoodLevel());
-        detail.put("saturation", (double) player.getSaturation());
-        detail.put("gamemode", player.getGameMode().name());
-        detail.put("ping", getPlayerPing(player));
-        detail.put("locale", player.getLocale());
-        detail.put("level", player.getLevel());
-        detail.put("exp", player.getExp());
-        detail.put("totalExperience", player.getTotalExperience());
-        detail.put("walkSpeed", player.getWalkSpeed());
-        detail.put("flySpeed", player.getFlySpeed());
-        detail.put("isFlying", player.isFlying());
-        detail.put("isOp", player.isOp());
-
-        // Potion effects
-        List<Map<String, Object>> effects = new ArrayList<>();
-        player.getActivePotionEffects().forEach(effect -> {
-            Map<String, Object> eff = new LinkedHashMap<>();
-            eff.put("type", effect.getType().getName());
-            eff.put("amplifier", effect.getAmplifier());
-            eff.put("duration", effect.getDuration() / 20); // ticks to seconds
-            effects.add(eff);
-        });
-        detail.put("potionEffects", effects);
-
-        // Inventory
-        PlayerInventory inv = player.getInventory();
-        List<Map<String, Object>> inventory = new ArrayList<>();
-        for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack item = inv.getItem(i);
-            if (item != null && !item.getType().isAir()) {
-                Map<String, Object> slot = new LinkedHashMap<>();
-                slot.put("slot", i);
-                slot.put("type", item.getType().name());
-                slot.put("amount", item.getAmount());
-                inventory.add(slot);
-            }
-        }
-        detail.put("inventory", inventory);
-
-        // Armor
-        List<Map<String, Object>> armor = new ArrayList<>();
-        for (ItemStack a : inv.getArmorContents()) {
-            if (a != null && !a.getType().isAir()) {
-                Map<String, Object> piece = new LinkedHashMap<>();
-                piece.put("type", a.getType().name());
-                piece.put("amount", a.getAmount());
-                armor.add(piece);
-            }
-        }
-        detail.put("armor", armor);
-
-        // Offhand
-        ItemStack offhand = inv.getItemInOffHand();
-        if (offhand != null && !offhand.getType().isAir()) {
-            detail.put("offhand", offhand.getType().name());
-        }
-
         ctx.result(gson().toJson(detail));
     }
 
@@ -249,41 +338,98 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        String username = body.get("username").toString();
-        String password = body.get("password").toString();
-        String role = body.getOrDefault("role", "moderator").toString();
-        if (username.isBlank() || password.isBlank()) {
-            ctx.status(400).result("{\"error\":\"Username and password required\"}");
+        Object rawUsername = body.get("username");
+        Object rawPassword = body.get("password");
+        String username = rawUsername == null ? null : rawUsername.toString();
+        String password = rawPassword == null ? null : rawPassword.toString();
+        String role = str(body, "role");
+        if (role == null)
+            role = "moderator";
+        if (!USERNAME_PATTERN.matcher(username).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid username (3-50 chars: letters, digits, _ . -)\"}");
+            return;
+        }
+        if (password == null || password.isBlank() || password.length() > MAX_PASSWORD_LEN) {
+            ctx.status(400).result("{\"error\":\"Invalid password (1-128 chars)\"}");
+            return;
+        }
+        if (!ROLE_PATTERN.matcher(role).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid role\"}");
+            return;
+        }
+        var users = plugin.getDatabaseManager().getUserRepository();
+        if (users.findByUsername(username).isPresent()) {
+            ctx.status(409).result("{\"error\":\"Username already taken\"}");
             return;
         }
         User user = new User(0, username, PasswordHasher.hash(password), role, true, LocalDateTime.now(), null);
-        plugin.getDatabaseManager().getUserRepository().create(user);
+        int userId;
+        try {
+            userId = users.create(user);
+        } catch (java.sql.SQLException e) {
+            if (com.xl1te.modpanel.database.DatabaseManager.isDuplicateKey(e)) {
+                ctx.status(409).result("{\"error\":\"Username already taken\"}");
+                return;
+            }
+            throw e;
+        }
         var perms = plugin.getDatabaseManager().getPermissionRepository();
-        perms.grant(user.getId(), "modpanel.stats");
-        perms.grant(user.getId(), "modpanel.players");
-        ctx.result("{\"ok\":true,\"username\":\"" + username + "\"}");
+        perms.grant(userId, "modpanel.stats");
+        perms.grant(userId, "modpanel.players");
+        ctx.result(gson().toJson(Map.of("ok", true, "username", username)));
     }
 
     private void handleUserUpdate(Context ctx) throws Exception {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        int id = Integer.parseInt(body.get("id").toString());
+        int id;
+        try {
+            id = Integer.parseInt(String.valueOf(body.get("id")));
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("{\"error\":\"Invalid user id\"}");
+            return;
+        }
         var repo = plugin.getDatabaseManager().getUserRepository();
         User user = repo.findById(id).orElse(null);
         if (user == null) {
             ctx.status(404).result("{\"error\":\"User not found\"}");
             return;
         }
-        String role = body.getOrDefault("role", user.getRole()).toString();
-        boolean enabled = Boolean
-                .parseBoolean(body.getOrDefault("enabled", String.valueOf(user.isEnabled())).toString());
+        String role = str(body, "role");
+        if (role == null)
+            role = user.getRole();
+        if (!ROLE_PATTERN.matcher(role).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid role\"}");
+            return;
+        }
+        boolean enabled;
+        Object rawEnabled = body.getOrDefault("enabled", String.valueOf(user.isEnabled()));
+        if (rawEnabled instanceof Boolean b) {
+            enabled = b;
+        } else if (rawEnabled != null
+                && (rawEnabled.toString().equalsIgnoreCase("true")
+                    || rawEnabled.toString().equalsIgnoreCase("false"))) {
+            enabled = Boolean.parseBoolean(rawEnabled.toString());
+        } else {
+            ctx.status(400).result("{\"error\":\"Invalid enabled flag (true/false)\"}");
+            return;
+        }
         String passwordHash = user.getPasswordHash();
-        if (body.containsKey("password") && !body.get("password").toString().isBlank()) {
-            passwordHash = PasswordHasher.hash(body.get("password").toString());
+        String newPassword = str(body, "password");
+        if (newPassword != null) {
+            if (newPassword.isBlank() || newPassword.length() > MAX_PASSWORD_LEN) {
+                ctx.status(400).result("{\"error\":\"Invalid password (1-128 chars)\"}");
+                return;
+            }
+            passwordHash = PasswordHasher.hash(newPassword);
         }
         repo.update(new User(id, user.getUsername(), passwordHash, role, enabled, user.getCreatedAt(),
                 user.getLastLogin()));
+        if (newPassword != null) {
+            // Mot de passe imposé par un tiers : à changer au prochain login.
+            repo.setPasswordChangeRequired(id);
+        }
         ctx.result("{\"ok\":true}");
     }
 
@@ -291,7 +437,11 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        String username = body.get("username").toString();
+        String username = str(body, "username");
+        if (username == null || username.isBlank()) {
+            ctx.status(400).result("{\"error\":\"Username required\"}");
+            return;
+        }
         plugin.getDatabaseManager().getUserRepository().delete(username);
         ctx.result("{\"ok\":true}");
     }
@@ -300,9 +450,27 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        int userId = Integer.parseInt(body.get("userId").toString());
-        String action = body.get("action").toString();
-        String permission = body.get("permission").toString();
+        int userId;
+        try {
+            userId = Integer.parseInt(String.valueOf(body.get("userId")));
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("{\"error\":\"Invalid userId\"}");
+            return;
+        }
+        String action = str(body, "action");
+        if (!"grant".equals(action) && !"revoke".equals(action)) {
+            ctx.status(400).result("{\"error\":\"Invalid action (grant/revoke)\"}");
+            return;
+        }
+        String permission = str(body, "permission");
+        if (permission == null || !PERMISSION_PATTERN.matcher(permission).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid permission (1-100 chars: letters, digits, . _ * -)\"}");
+            return;
+        }
+        if (plugin.getDatabaseManager().getUserRepository().findById(userId).isEmpty()) {
+            ctx.status(404).result("{\"error\":\"User not found\"}");
+            return;
+        }
         var perms = plugin.getDatabaseManager().getPermissionRepository();
         switch (action) {
             case "grant" -> perms.grant(userId, permission);
@@ -339,6 +507,16 @@ public class ApiController implements Handler {
         return sessionManager.getSession(auth.substring(7));
     }
 
+    private String getClientIP(Context ctx) {
+        if (proxyMode) {
+            String xForwardedFor = ctx.header("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+                return xForwardedFor.split(",")[0].trim();
+            }
+        }
+        return ctx.req().getRemoteAddr();
+    }
+
     private boolean hasPermission(String username, String permission) {
         try {
             var repo = plugin.getDatabaseManager().getUserRepository();
@@ -352,6 +530,21 @@ public class ApiController implements Handler {
             return userPerms.contains(permission);
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Exécute la collecte sur le thread principal Bukkit et attend le résultat.
+     * L'API Bukkit n'est pas thread-safe : les handlers Javalin tournent sur des
+     * threads Jetty et ne doivent jamais toucher joueurs, mondes ou inventaires.
+     */
+    private <T> T callSync(Callable<T> task) throws Exception {
+        Future<T> future = plugin.getServer().getScheduler().callSyncMethod(plugin, task);
+        try {
+            return future.get(SYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         }
     }
 
@@ -385,7 +578,19 @@ public class ApiController implements Handler {
     }
 
     private Map<String, Object> jsonBody(Context ctx) {
-        return ctx.bodyAsClass(BODY_TYPE);
+        // Corps absent ou JSON invalide : map vide pour des 400 explicites, jamais 500.
+        try {
+            Map<String, Object> body = ctx.bodyAsClass(BODY_TYPE);
+            return body != null ? body : Map.of();
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    /** Valeur string d'un champ JSON, ou null si absent/nul. */
+    private static String str(Map<String, Object> body, String key) {
+        Object v = body.get(key);
+        return v == null ? null : v.toString();
     }
 
     private com.google.gson.Gson gson() {

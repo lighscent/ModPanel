@@ -32,10 +32,22 @@ public class WebWhitelistRepository {
     }
 
     public void add(String ip) throws SQLException {
-        String sql = "MERGE INTO web_whitelist (ip, added_at) KEY(ip) VALUES (?, CURRENT_TIMESTAMP)";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = databaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "UPDATE web_whitelist SET added_at = CURRENT_TIMESTAMP WHERE ip = ?")) {
+            stmt.setString(1, ip);
+            if (stmt.executeUpdate() > 0)
+                return;
+        }
+        try (Connection conn = databaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO web_whitelist (ip, added_at) VALUES (?, CURRENT_TIMESTAMP)")) {
             stmt.setString(1, ip);
             stmt.executeUpdate();
+        } catch (SQLException e) {
+            if (com.xl1te.modpanel.database.DatabaseManager.isDuplicateKey(e))
+                return;
+            throw e;
         }
     }
 

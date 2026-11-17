@@ -102,6 +102,11 @@
         font-size: 0.83rem;
         text-align: center;
       }
+      .error-msg.success {
+        background: rgba(76, 175, 106, 0.14);
+        border-color: rgba(76, 175, 106, 0.4);
+        color: #9fd8b4;
+      }
       .loading-spinner {
         display: none;
         width: 15px;
@@ -131,6 +136,24 @@
         <button type="submit" class="btn-login" id="loginBtn">
           <span id="loginText">Sign In</span>
           <div class="loading-spinner" id="spinner"></div>
+        </button>
+      </form>
+      <form id="changeForm" style="display:none">
+        <div class="form-group">
+          <label for="chgCurrent">Current password</label>
+          <input type="password" id="chgCurrent" autocomplete="current-password" required />
+        </div>
+        <div class="form-group">
+          <label for="chgNew">New password</label>
+          <input type="password" id="chgNew" autocomplete="new-password" required />
+        </div>
+        <div class="form-group">
+          <label for="chgConfirm">Confirm new password</label>
+          <input type="password" id="chgConfirm" autocomplete="new-password" required />
+        </div>
+        <button type="submit" class="btn-login" id="changeBtn">
+          <span id="changeText">Change password</span>
+          <div class="loading-spinner" id="chgSpinner"></div>
         </button>
       </form>
       <div class="error-msg" id="errorMsg"></div>
@@ -165,6 +188,11 @@
             localStorage.setItem('username', data.username);
             localStorage.setItem('role', data.role);
             window.location.href = '/dashboard';
+          } else if (res.status === 403 && data.mustChangePassword) {
+            loginForm.style.display = 'none';
+            document.getElementById('changeForm').style.display = 'block';
+            pendingUser = document.getElementById('username').value;
+            showError('You must change your password before signing in.');
           } else {
             showError(data.error || 'Login failed');
           }
@@ -179,8 +207,58 @@
 
       function showError(msg) {
         errorMsg.textContent = msg;
+        errorMsg.classList.remove('success');
         errorMsg.style.display = 'block';
       }
+
+      function showSuccess(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.classList.add('success');
+        errorMsg.style.display = 'block';
+      }
+
+      let pendingUser = '';
+      const changeForm = document.getElementById('changeForm');
+      const changeBtn = document.getElementById('changeBtn');
+      const changeText = document.getElementById('changeText');
+      const chgSpinner = document.getElementById('chgSpinner');
+
+      changeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMsg.style.display = 'none';
+        const current = document.getElementById('chgCurrent').value;
+        const next = document.getElementById('chgNew').value;
+        if (next !== document.getElementById('chgConfirm').value) {
+          showError('New passwords do not match');
+          return;
+        }
+        changeBtn.disabled = true;
+        changeText.style.display = 'none';
+        chgSpinner.style.display = 'block';
+
+        try {
+          const res = await fetch('/api/auth/password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: pendingUser, currentPassword: current, newPassword: next })
+          });
+          const data = await res.json();
+          if (res.status === 200) {
+            changeForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            document.getElementById('password').value = '';
+            showSuccess('Password changed. Please sign in.');
+          } else {
+            showError(data.error || 'Password change failed');
+          }
+        } catch (err) {
+          showError('Connection error');
+        } finally {
+          changeBtn.disabled = false;
+          changeText.style.display = 'block';
+          chgSpinner.style.display = 'none';
+        }
+      });
 
       if (localStorage.getItem('token')) {
         window.location.href = '/dashboard';

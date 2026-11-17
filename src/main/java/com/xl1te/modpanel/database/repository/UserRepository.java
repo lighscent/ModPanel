@@ -39,21 +39,22 @@ public class UserRepository {
         return Optional.empty();
     }
 
-    public void create(User user) throws SQLException {
-        String sql;
-        if (db.getDialect() == com.xl1te.modpanel.database.DatabaseManager.Dialect.MYSQL) {
-            sql = "INSERT INTO users (username, password_hash, role, enabled) VALUES (?, ?, ?, ?) " +
-                  "ON DUPLICATE KEY UPDATE username=username";
-        } else {
-            sql = "MERGE INTO users (username, password_hash, role, enabled) KEY(username) VALUES (?, ?, ?, ?)";
-        }
-        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+    public int create(User user) throws SQLException {
+        String sql = "INSERT INTO users (username, password_hash, role, enabled) VALUES (?, ?, ?, ?)";
+        try (Connection conn = db.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPasswordHash());
             stmt.setString(3, user.getRole());
             stmt.setBoolean(4, user.isEnabled());
             stmt.executeUpdate();
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1);
+            }
         }
+        // Fallback if driver returns no generated key: re-read the row just inserted.
+        return findByUsername(user.getUsername()).map(User::getId)
+                .orElseThrow(() -> new SQLException("Failed to retrieve generated user id"));
     }
 
     public void update(User user) throws SQLException {
@@ -90,6 +91,35 @@ public class UserRepository {
         String sql = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE username = ?";
         try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, username);
+            stmt.executeUpdate();
+        }
+    }
+
+    public boolean isPasswordChangeRequired(int userId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM password_change_required WHERE user_id = ?";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        }
+    }
+
+    public void setPasswordChangeRequired(int userId) throws SQLException {
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO password_change_required (user_id) VALUES (?)")) {
+            stmt.setInt(1, userId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            if (DatabaseManager.isDuplicateKey(e)) return;
+            throw e;
+        }
+    }
+
+    public void clearPasswordChangeRequired(int userId) throws SQLException {
+        String sql = "DELETE FROM password_change_required WHERE user_id = ?";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
             stmt.executeUpdate();
         }
     }

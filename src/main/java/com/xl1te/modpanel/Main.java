@@ -80,15 +80,24 @@ public class Main extends JavaPlugin {
                     "admin", true,
                     java.time.LocalDateTime.now(), null
                 );
-                repo.create(admin);
-                int adminId = repo.findByUsername("admin").get().getId();
+                int adminId = repo.create(admin);
                 perms.grant(adminId, "modpanel.stats");
                 perms.grant(adminId, "modpanel.players");
                 perms.grant(adminId, "modpanel.player.detail");
                 perms.grant(adminId, "modpanel.users.view");
                 perms.grant(adminId, "modpanel.users.manage");
                 perms.grant(adminId, "modpanel.whitelist");
-                bestLogger.info("Default admin user created (admin / admin123) - CHANGE THIS PASSWORD!");
+                repo.setPasswordChangeRequired(adminId);
+                bestLogger.info("Default admin user created (admin / admin123) - password change required at first login!");
+            } else {
+                // Install existante : forcer le changement si le mot de passe public par défaut est toujours en place.
+                var admin = repo.findByUsername("admin");
+                if (admin.isPresent()
+                        && com.xl1te.modpanel.web.auth.PasswordHasher.verify("admin123",
+                                admin.get().getPasswordHash())) {
+                    repo.setPasswordChangeRequired(admin.get().getId());
+                    bestLogger.warning("Default admin password still in use - password change required at next login!");
+                }
             }
         } catch (Exception e) {
             bestLogger.severe("Failed to create default admin: " + e.getMessage());

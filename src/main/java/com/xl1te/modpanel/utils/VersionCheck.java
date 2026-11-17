@@ -2,7 +2,6 @@ package com.xl1te.modpanel.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.xl1te.modpanel.utils.GsonProvider;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
