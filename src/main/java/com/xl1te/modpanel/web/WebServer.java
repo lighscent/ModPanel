@@ -58,6 +58,13 @@ public class WebServer {
                 });
                 routes.before("/", whitelist);
                 routes.before("/{page}", whitelist);
+                // L'API exige IP whitelistée + bearer, sauf le flux pré-session.
+                routes.before(ctx -> {
+                    String path = ctx.path();
+                    if (path.startsWith("/api/") && !path.startsWith("/api/auth/")) {
+                        whitelist.handle(ctx);
+                    }
+                });
 
                 routes.get("/", ctx -> ctx.redirect("/index"));
                 routes.get("/dashboard", htmlController::serveDashboard);
