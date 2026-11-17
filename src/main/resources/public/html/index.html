@@ -19,7 +19,7 @@
       }
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <script>if(!localStorage.getItem('token')){window.location.href='/login';}else{window.location.href='/dashboard';}</script>
+    <script>fetch('/api/auth/session').then((r) => { window.location.href = r.ok ? '/dashboard' : '/login'; }).catch(() => { window.location.href = '/login'; });</script>
   </head>
   <body><div class="spinner"></div><div style="color:var(--text-secondary);font-size:.85rem">Loading...</div></body>
 </html>

@@ -1,5 +1,6 @@
 package com.xl1te.modpanel.web.auth;
 
+import io.javalin.http.Context;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +12,9 @@ public class SessionManager {
 
     private static final long SESSION_TTL_MS = 86_400_000L;
     private static final long PURGE_INTERVAL_MIN = 30L;
+
+    /** Nom du cookie de session : HttpOnly + SameSite=Strict, jamais exposé au JS. */
+    public static final String SESSION_COOKIE = "modpanel_session";
 
     private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<String>> tokensByUser = new ConcurrentHashMap<>();
@@ -55,6 +59,26 @@ public class SessionManager {
     public void removeSession(String token) {
         Session s = sessions.remove(token);
         if (s != null) removeTokenFromIndex(s.username(), token);
+    }
+
+    /** Cookie de session : HttpOnly + SameSite=Strict (anti-CSRF), Path=/, durée = TTL. */
+    public static String sessionCookieHeader(String token) {
+        return SESSION_COOKIE + "=" + token + "; Path=/; Max-Age=" + (SESSION_TTL_MS / 1000)
+                + "; HttpOnly; SameSite=Strict";
+    }
+
+    /** Expire le cookie de session (logout). */
+    public static String clearSessionCookieHeader() {
+        return SESSION_COOKIE + "=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict";
+    }
+
+    /** Token depuis le cookie en priorité, en-tête Bearer en repli (API programmatique). */
+    public static String extractToken(Context ctx) {
+        String cookie = ctx.cookie(SESSION_COOKIE);
+        if (cookie != null && !cookie.isBlank()) return cookie;
+        String auth = ctx.header("Authorization");
+        if (auth != null && auth.startsWith("Bearer ")) return auth.substring(7);
+        return null;
     }
 
     /** Révoque toutes les sessions d'un utilisateur (mot de passe, désactivation, suppression). */

@@ -50,6 +50,12 @@ public class WebServer {
                 config.http.defaultContentType = "application/json";
 
                 RoutesConfig routes = config.routes;
+                routes.before(ctx -> {
+                    ctx.header("X-Content-Type-Options", "nosniff");
+                    ctx.header("X-Frame-Options", "SAMEORIGIN");
+                    ctx.header("Referrer-Policy", "strict-origin-when-cross-origin");
+                    ctx.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+                });
                 routes.before("/", whitelist);
                 routes.before("/{page}", whitelist);
 
@@ -73,6 +79,10 @@ public class WebServer {
 
                 routes.get("/items/{name}", ctx -> {
                     String name = ctx.pathParam("name");
+                    if (!name.matches("[a-z0-9_(). -]+\\.png")) {
+                        ctx.status(404).result("Not found");
+                        return;
+                    }
                     java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("assets/minecraft/" + name);
                     if (is != null) {
                         ctx.contentType("image/png").result(is);
@@ -84,6 +94,7 @@ public class WebServer {
                 routes.post("/api/auth/login", apiController::handle);
                 routes.post("/api/auth/logout", apiController::handle);
                 routes.post("/api/auth/password", apiController::handle);
+                routes.get("/api/auth/session", wrapApi(apiController));
                 routes.get("/api/stats", wrapApi(apiController));
                 routes.get("/api/players", wrapApi(apiController));
                 routes.get("/api/players/detail", wrapApi(apiController));
@@ -106,12 +117,12 @@ public class WebServer {
     }
 
     private void checkApiAuth(io.javalin.http.Context ctx, ApiController apiController) {
-        String auth = ctx.header("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
+        String token = SessionManager.extractToken(ctx);
+        if (token == null) {
             ctx.status(401).result("{\"error\":\"Unauthorized\"}");
             return;
         }
-        Session session = sessionManager.getSession(auth.substring(7));
+        Session session = sessionManager.getSession(token);
         if (session == null) {
             ctx.status(401).result("{\"error\":\"Unauthorized\"}");
             return;

@@ -4,6 +4,7 @@ import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.ExpiringCache;
 import io.javalin.http.Context;
+import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.Handler;
 
 import java.util.List;
@@ -66,12 +67,11 @@ public class IPWhitelist implements Handler {
             banManager.checkConnection(clientIP);
         } catch (IPBanException e) {
             logger.warning("IP " + clientIP + " blocked: " + e.getMessage());
-            ctx.status(403).result(e.getMessage());
-            return;
+            throw new ForbiddenResponse(e.getMessage());
         }
 
         logger.warning("Access denied for non-whitelisted IP: " + clientIP);
-        ctx.status(403).result("Access denied. Your IP is not whitelisted.");
+        throw new ForbiddenResponse("Access denied. Your IP is not whitelisted.");
     }
 
     public void invalidateCache(String ip) {

@@ -181,10 +181,7 @@
           });
           const data = await res.json();
 
-          if (res.status === 200 && data.token) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('username', data.username);
-            localStorage.setItem('role', data.role);
+          if (res.status === 200 && data.username) {
             window.location.href = '/dashboard';
           } else if (res.status === 403 && data.mustChangePassword) {
             loginForm.style.display = 'none';
@@ -258,9 +255,9 @@
         }
       });
 
-      if (localStorage.getItem('token')) {
-        window.location.href = '/dashboard';
-      }
+      fetch('/api/auth/session').then((r) => {
+        if (r.ok) window.location.href = '/dashboard';
+      }).catch(() => {});
     </script>
   </body>
 </html>

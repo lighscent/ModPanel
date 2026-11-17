@@ -545,17 +545,15 @@
     </div>
 
     <script>
-      const token = localStorage.getItem('token');
-      if (!token) { window.location.href = '/login'; }
-
-      const username = localStorage.getItem('username');
-      document.getElementById('usernameDisplay').textContent = username || 'Unknown';
-
-      function authHeaders() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
+      fetch('/api/auth/session').then(async (r) => {
+        if (!r.ok) { window.location.href = '/login'; return; }
+        const me = await r.json();
+        document.getElementById('usernameDisplay').textContent = me.username || 'Unknown';
+      }).catch(() => { window.location.href = '/login'; });
 
       async function apiFetch(url, options = {}) {
-        const res = await fetch(url, { ...options, headers: { ...authHeaders(), ...options.headers } });
-        if (res.status === 401) { localStorage.clear(); window.location.href = '/login'; }
+        const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+        if (res.status === 401) { window.location.href = '/login'; }
         if (!res.ok && res.headers.get('content-type')?.includes('json')) {
           const err = await res.json();
           throw new Error(err.error || 'Request failed');
@@ -564,7 +562,10 @@
         return res;
       }
 
-      function logout() { localStorage.clear(); window.location.href = '/login'; }
+      async function logout() {
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
+        window.location.href = '/login';
+      }
 
       let currentPage = 'dashboard';
 

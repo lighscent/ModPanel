@@ -74,6 +74,7 @@ public class ApiController implements Handler {
             switch (path) {
                 case "/api/auth/login" -> handleLogin(ctx);
                 case "/api/auth/logout" -> handleLogout(ctx);
+                case "/api/auth/session" -> handleSession(ctx);
                 case "/api/auth/password" -> handlePasswordChange(ctx);
                 case "/api/stats" -> handleStats(ctx);
                 case "/api/players" -> handlePlayers(ctx);
@@ -135,15 +136,33 @@ public class ApiController implements Handler {
         }
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
-        ctx.result(gson().toJson(Map.of("token", token, FIELD_USERNAME, user.getUsername(), "role", user.getRole())));
+        ctx.header("Set-Cookie", SessionManager.sessionCookieHeader(token));
+        ctx.result(gson().toJson(Map.of(FIELD_USERNAME, user.getUsername(), "role", user.getRole())));
     }
 
     private void handleLogout(Context ctx) throws Exception {
-        String auth = ctx.header("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            sessionManager.removeSession(auth.substring(7));
+        String token = SessionManager.extractToken(ctx);
+        if (token != null) {
+            sessionManager.removeSession(token);
         }
+        ctx.header("Set-Cookie", SessionManager.clearSessionCookieHeader());
         ctx.result("{\"ok\":true}");
+    }
+
+    /** Identité de la session courante (posée par wrapApi/checkApiAuth). */
+    private void handleSession(Context ctx) throws Exception {
+        Session session = (Session) ctx.attribute("session");
+        if (session == null) {
+            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
+            return;
+        }
+        User user = plugin.getDatabaseManager().getUserRepository()
+                .findByUsername(session.username()).orElse(null);
+        if (user == null || !user.isEnabled()) {
+            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
+            return;
+        }
+        ctx.result(gson().toJson(Map.of(FIELD_USERNAME, user.getUsername(), "role", user.getRole())));
     }
 
     /**
@@ -537,10 +556,9 @@ public class ApiController implements Handler {
     }
 
     private Session getAuthenticatedSession(Context ctx) {
-        String auth = ctx.header("Authorization");
-        if (auth == null || !auth.startsWith("Bearer "))
-            return null;
-        return sessionManager.getSession(auth.substring(7));
+        String token = SessionManager.extractToken(ctx);
+        if (token == null) return null;
+        return sessionManager.getSession(token);
     }
 
     private String getClientIP(Context ctx) {
