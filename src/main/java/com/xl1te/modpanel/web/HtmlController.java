@@ -16,7 +16,14 @@ public class HtmlController {
 
     public void serveHtml(Context ctx) {
         String page = ctx.pathParam("page");
-        String fileName = page.endsWith(".html") ? page : page + ".html";
+        serveFile(ctx, page.endsWith(".html") ? page : page + ".html");
+    }
+
+    public void serveDashboard(Context ctx) {
+        serveFile(ctx, "dashboard.html");
+    }
+
+    private void serveFile(Context ctx, String fileName) {
         String clientIP = getClientIP(ctx);
         logger.info("Serving HTML file '" + fileName + "' to IP: " + clientIP);
 

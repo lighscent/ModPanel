@@ -568,24 +568,83 @@
 
       let currentPage = 'dashboard';
 
+      const ROUTE_PAGES = {
+        '/dashboard': 'dashboard',
+        '/players': 'players',
+        '/users': 'users',
+        '/whitelist': 'whitelist'
+      };
+
       document.querySelectorAll('.sidebar-item').forEach(el => {
         el.addEventListener('click', function() {
-          document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
-          this.classList.add('active');
-          const page = this.dataset.page;
-          document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-          document.getElementById('page-' + page).style.display = 'block';
-          currentPage = page;
-          loadPage(page);
+          navigate('/' + this.dataset.page);
         });
       });
 
+      function navigate(path) {
+        if (location.pathname !== path) history.pushState({}, '', path);
+        renderRoute();
+      }
+
+      async function renderRoute() {
+        const detail = location.pathname.match(/^\/players\/([^/]+)$/);
+        if (detail) {
+          await showPlayerDetailByName(decodeURIComponent(detail[1]));
+          return;
+        }
+        const page = ROUTE_PAGES[location.pathname] || 'dashboard';
+        showPage(page);
+        await loadPage(page);
+      }
+
+      function showPage(page) {
+        currentPage = page;
+        document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+        document.getElementById('page-' + page).style.display = 'block';
+        document.querySelectorAll('.sidebar-item').forEach(x => x.classList.toggle('active', x.dataset.page === page));
+      }
+
       function showPlayerDetailPage(uuid, name) {
+        const path = '/players/' + encodeURIComponent(name);
+        if (location.pathname !== path) history.pushState({}, '', path);
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         document.getElementById('page-player-detail').style.display = 'block';
         document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
         loadPlayerDetail(uuid, name);
       }
+
+      async function showPlayerDetailByName(name) {
+        const container = document.getElementById('page-player-detail');
+        document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+        container.style.display = 'block';
+        document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
+        container.innerHTML = '<div class="page-header"><i class="fas fa-spinner fa-spin"></i>Loading...</div>';
+
+        try {
+          const res = await apiFetch('/api/players');
+          const players = await res.json();
+          const player = Array.isArray(players)
+            ? players.find(p => p.name.toLowerCase() === name.toLowerCase())
+            : null;
+          if (!player) {
+            container.innerHTML = `
+              <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+              <div class="page-header"><i class="fas fa-triangle-exclamation"></i>Player not found</div>
+              <div class="empty-state">No online player named ${escapeHtml(name)}.</div>
+            `;
+            return;
+          }
+          loadPlayerDetail(player.uuid, player.name);
+        } catch (e) {
+          container.innerHTML = `
+            <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+            <div class="page-header"><i class="fas fa-triangle-exclamation"></i>Error</div>
+            <div class="empty-state">Failed to load player: ${escapeHtml(e.message)}</div>
+          `;
+        }
+      }
+
+      window.addEventListener('popstate', renderRoute);
 
       async function loadPage(page) {
         switch (page) {
@@ -833,11 +892,7 @@
       }
 
       function backToPlayers() {
-        document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-        document.getElementById('page-players').style.display = 'block';
-        document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
-        document.querySelector('.sidebar-item[data-page="players"]').classList.add('active');
-        loadPage('players');
+        navigate('/players');
       }
 
       /* ========== USERS ========== */
@@ -920,7 +975,7 @@
         return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
 
-      window.onload = () => loadDashboard();
+      window.onload = () => renderRoute();
       window.onbeforeunload = () => { if (statsInterval) clearInterval(statsInterval); if (playersInterval) clearInterval(playersInterval); };
     </script>
   </body>

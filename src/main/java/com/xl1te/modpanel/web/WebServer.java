@@ -52,6 +52,12 @@ public class WebServer {
                 routes.before("/{page}", whitelist);
 
                 routes.get("/", ctx -> ctx.redirect("/index"));
+                routes.get("/dashboard", htmlController::serveDashboard);
+                routes.get("/players", htmlController::serveDashboard);
+                routes.get("/users", htmlController::serveDashboard);
+                routes.get("/whitelist", htmlController::serveDashboard);
+                routes.before("/players/{name}", whitelist);
+                routes.get("/players/{name}", htmlController::serveDashboard);
                 routes.get("/{page}", htmlController::serveHtml);
 
                 routes.get("/items/{name}", ctx -> {
