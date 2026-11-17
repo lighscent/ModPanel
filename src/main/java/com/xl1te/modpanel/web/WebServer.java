@@ -37,7 +37,7 @@ public class WebServer {
                     plugin.getConfig().getLong("web-server.connection-limit.window-seconds", 60),
                     plugin.getConfig().getLong("web-server.connection-limit.ban-duration", 600),
                     plugin.getConfig().getInt("web-server.connection-limit.permanent-ban-threshold", 2));
-            HtmlController htmlController = new HtmlController(logger, proxyMode);
+            HtmlController htmlController = new HtmlController(logger);
             IPWhitelist whitelist = new IPWhitelist(connectionLimiter, plugin.getDatabaseManager(), logger, proxyMode,
                     plugin.getConfig().getBoolean("ip-whitelist-enabled", true),
                     plugin.getConfig().getStringList("ip-whitelist"));

@@ -79,7 +79,6 @@ public class DatabaseManager {
 
             try (Connection conn = getConnection()) {
                 if (!conn.isValid(5)) throw new SQLException("Database connection check failed.");
-                logger.info("Database connection established successfully.");
             }
 
             createTables();

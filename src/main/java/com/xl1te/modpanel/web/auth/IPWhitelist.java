@@ -40,10 +40,7 @@ public class IPWhitelist implements Handler {
         }
 
         String clientIP = getClientIP(ctx);
-        logger.info("Incoming connection attempt from " + clientIP);
-
         if (configWhitelist.contains(clientIP)) {
-            logger.info("IP " + clientIP + " allowed by config whitelist.");
             return;
         }
 
@@ -56,7 +53,6 @@ public class IPWhitelist implements Handler {
                 boolean allowed = databaseManager.getWebWhitelistRepository().exists(clientIP);
                 whitelistCache.put(clientIP, allowed);
                 if (allowed) {
-                    logger.info("IP " + clientIP + " allowed by whitelist.");
                     return;
                 }
             } catch (Exception e) {

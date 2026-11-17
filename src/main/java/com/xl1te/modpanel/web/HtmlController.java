@@ -7,11 +7,9 @@ import java.io.InputStream;
 public class HtmlController {
 
     private final BestLogger logger;
-    private final boolean proxyMode;
 
-    public HtmlController(BestLogger logger, boolean proxyMode) {
+    public HtmlController(BestLogger logger) {
         this.logger = logger;
-        this.proxyMode = proxyMode;
     }
 
     public void serveHtml(Context ctx) {
@@ -24,9 +22,6 @@ public class HtmlController {
     }
 
     private void serveFile(Context ctx, String fileName) {
-        String clientIP = getClientIP(ctx);
-        logger.info("Serving HTML file '" + fileName + "' to IP: " + clientIP);
-
         try {
             InputStream is = getClass().getClassLoader().getResourceAsStream("public/html/" + fileName);
             if (is != null) {
@@ -41,7 +36,4 @@ public class HtmlController {
         }
     }
 
-    private String getClientIP(Context ctx) {
-        return ClientIp.extract(ctx, proxyMode);
-    }
 }

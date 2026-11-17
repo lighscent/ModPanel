@@ -35,9 +35,8 @@ public class VersionCheck {
                 return;
 
             if (isNewer(currentVersion, latest)) {
-                logger.severe(" A new update for ModPanel is available!");
-                logger.severe(" Current version is: " + currentVersion + " and latest is: " + latest);
-                logger.severe(" Download: https://modrinth.com/plugin/modpanel");
+                logger.info("Update available: " + latest + " (current " + currentVersion
+                        + ") - https://modrinth.com/plugin/modpanel");
             }
         }, executor);
     }

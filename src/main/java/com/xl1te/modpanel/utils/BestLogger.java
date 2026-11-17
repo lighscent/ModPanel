@@ -7,6 +7,11 @@ import java.util.regex.Pattern;
 
 public class BestLogger {
 
+    private static final String RESET = "\u001B[0m";
+    private static final String GREEN = "\u001B[32m";
+    private static final String YELLOW = "\u001B[33m";
+    private static final String RED = "\u001B[31m";
+
     private static final Pattern IPV4_PATTERN = Pattern.compile("\\b(\\d{1,3}\\.\\d{1,3})\\.\\d{1,3}\\.\\d{1,3}\\b");
     private static final Pattern IPV6_PATTERN = Pattern.compile(
             "\\b([0-9a-fA-F]{1,4}:([0-9a-fA-F]{1,4}:){2,6})(?:[0-9a-fA-F]{1,4}|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\\b");
@@ -27,19 +32,19 @@ public class BestLogger {
     }
 
     public void info(String message) {
-        plugin.getLogger().info("\u001B[32m" + processMessage(message) + "\u001B[0m");
+        plugin.getLogger().info(GREEN + processMessage(message) + RESET);
     }
 
     public void warning(String message) {
-        plugin.getLogger().warning("\u001B[33m" + processMessage(message) + "\u001B[0m");
+        plugin.getLogger().warning(YELLOW + processMessage(message) + RESET);
     }
 
     public void severe(String message) {
-        plugin.getLogger().severe("\u001B[31m" + processMessage(message) + "\u001B[0m");
+        plugin.getLogger().severe(RED + processMessage(message) + RESET);
     }
 
     public void severe(String message, Throwable error) {
-        plugin.getLogger().log(Level.SEVERE, "\u001B[31m" + processMessage(message) + "\u001B[0m", error);
+        plugin.getLogger().log(Level.SEVERE, RED + processMessage(message) + RESET, error);
     }
 
 }
