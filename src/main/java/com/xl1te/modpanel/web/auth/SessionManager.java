@@ -38,9 +38,11 @@ public class SessionManager {
         }
     }
 
-    public String createSession(String username) {
+    public String createSession(String username, int userId, String role, Set<String> permissions,
+            boolean enabled) {
         String token = UUID.randomUUID().toString().replace("-", "");
-        sessions.put(token, new Session(username, System.currentTimeMillis()));
+        sessions.put(token, new Session(username, System.currentTimeMillis(), userId, role,
+                Set.copyOf(permissions), enabled));
         tokensByUser.computeIfAbsent(username, k -> ConcurrentHashMap.newKeySet()).add(token);
         return token;
     }
@@ -87,6 +89,19 @@ public class SessionManager {
         if (tokens != null) tokens.forEach(sessions::remove);
     }
 
+    /**
+     * Recharge l'identité snapshotée (rôle, permissions, état) après une
+     * modification sans déconnecter : ne touche que les tokens existants.
+     */
+    public void refreshUserSessions(String username, int userId, String role, Set<String> permissions,
+            boolean enabled) {
+        Set<String> tokens = tokensByUser.get(username);
+        if (tokens == null) return;
+        Set<String> frozen = Set.copyOf(permissions);
+        tokens.forEach(token -> sessions.computeIfPresent(token,
+                (t, s) -> new Session(username, s.createdAt(), userId, role, frozen, enabled)));
+    }
+
     public boolean isValidSession(String token) {
         return getSession(token) != null;
     }
@@ -108,5 +123,6 @@ public class SessionManager {
         });
     }
 
-    public record Session(String username, long createdAt) {}
+    public record Session(String username, long createdAt, int userId, String role, Set<String> permissions,
+            boolean enabled) {}
 }

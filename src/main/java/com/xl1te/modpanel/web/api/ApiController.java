@@ -135,7 +135,9 @@ public class ApiController implements Handler {
             return;
         }
         repo.updateLastLogin(user.getUsername());
-        String token = sessionManager.createSession(user.getUsername());
+        Set<String> perms = plugin.getDatabaseManager().getPermissionRepository().getPermissions(user.getId());
+        String token = sessionManager.createSession(user.getUsername(), user.getId(), user.getRole(), perms,
+                user.isEnabled());
         ctx.header("Set-Cookie", SessionManager.sessionCookieHeader(token));
         ctx.result(gson().toJson(Map.of(FIELD_USERNAME, user.getUsername(), "role", user.getRole())));
     }
@@ -149,20 +151,14 @@ public class ApiController implements Handler {
         ctx.result("{\"ok\":true}");
     }
 
-    /** Identité de la session courante (posée par wrapApi/checkApiAuth). */
+    /** Identité de la session courante (posée par wrapApi/checkApiAuth, snapshot au login). */
     private void handleSession(Context ctx) throws Exception {
         Session session = (Session) ctx.attribute("session");
-        if (session == null) {
+        if (session == null || !session.enabled()) {
             ctx.status(401).result("{\"error\":\"Unauthorized\"}");
             return;
         }
-        User user = plugin.getDatabaseManager().getUserRepository()
-                .findByUsername(session.username()).orElse(null);
-        if (user == null || !user.isEnabled()) {
-            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
-            return;
-        }
-        ctx.result(gson().toJson(Map.of(FIELD_USERNAME, user.getUsername(), "role", user.getRole())));
+        ctx.result(gson().toJson(Map.of(FIELD_USERNAME, session.username(), "role", session.role())));
     }
 
     /**
@@ -471,6 +467,9 @@ public class ApiController implements Handler {
             // Sessions existantes révoquées : mot de passe changé ou compte désactivé.
             sessionManager.removeSessionsForUser(user.getUsername());
         }
+        // Rôle/permissions modifiés sans déconnexion : recharge le snapshot (no-op si révoqué).
+        sessionManager.refreshUserSessions(user.getUsername(), id, role,
+                plugin.getDatabaseManager().getPermissionRepository().getPermissions(id), enabled);
         ctx.result("{\"ok\":true}");
     }
 
@@ -522,7 +521,8 @@ public class ApiController implements Handler {
             ctx.status(400).result("{\"error\":\"Invalid permission (1-100 chars: letters, digits, . _ * -)\"}");
             return;
         }
-        if (plugin.getDatabaseManager().getUserRepository().findById(userId).isEmpty()) {
+        User target = plugin.getDatabaseManager().getUserRepository().findById(userId).orElse(null);
+        if (target == null) {
             ctx.status(404).result("{\"error\":\"User not found\"}");
             return;
         }
@@ -531,6 +531,9 @@ public class ApiController implements Handler {
             case "grant" -> perms.grant(userId, permission);
             case "revoke" -> perms.revoke(userId, permission);
         }
+        // Permissions modifiées : recharge le snapshot des sessions actives.
+        sessionManager.refreshUserSessions(target.getUsername(), target.getId(), target.getRole(),
+                perms.getPermissions(target.getId()), target.isEnabled());
         ctx.result("{\"ok\":true}");
     }
 
@@ -547,7 +550,7 @@ public class ApiController implements Handler {
             ctx.status(401).result("{\"error\":\"Unauthorized\"}");
             return false;
         }
-        if (!hasPermission(session.username(), permission)) {
+        if (!hasPermission(session, permission)) {
             ctx.status(403).result("{\"error\":\"Permission denied\"}");
             return false;
         }
@@ -571,20 +574,13 @@ public class ApiController implements Handler {
         return ctx.req().getRemoteAddr();
     }
 
-    private boolean hasPermission(String username, String permission) {
-        try {
-            var repo = plugin.getDatabaseManager().getUserRepository();
-            var perms = plugin.getDatabaseManager().getPermissionRepository();
-            User user = repo.findByUsername(username).orElse(null);
-            if (user == null)
-                return false;
-            Set<String> userPerms = perms.getPermissions(user.getId());
-            if (user.getRole().equals("admin") || user.getRole().equals("owner"))
-                return true;
-            return userPerms.contains(permission);
-        } catch (Exception e) {
+    /** Contrôle sur le snapshot de session (rôle, permissions) : 0 requête DB. */
+    private boolean hasPermission(Session session, String permission) {
+        if (!session.enabled())
             return false;
-        }
+        if (session.role().equals("admin") || session.role().equals("owner"))
+            return true;
+        return session.permissions().contains(permission);
     }
 
     /**

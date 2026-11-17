@@ -13,7 +13,7 @@ public class IPWhitelist implements Handler {
 
     private static final long CACHE_TTL_MS = 30_000;
 
-    private final IPBanManager banManager;
+    private final ConnectionLimiter connectionLimiter;
     private final DatabaseManager databaseManager;
     private final BestLogger logger;
     private final boolean proxyMode;
@@ -21,9 +21,9 @@ public class IPWhitelist implements Handler {
     private final List<String> configWhitelist;
     private final ExpiringCache<String, Boolean> whitelistCache;
 
-    public IPWhitelist(IPBanManager banManager, DatabaseManager databaseManager, BestLogger logger, boolean proxyMode,
+    public IPWhitelist(ConnectionLimiter connectionLimiter, DatabaseManager databaseManager, BestLogger logger, boolean proxyMode,
             boolean enabled, List<String> configWhitelist) {
-        this.banManager = banManager;
+        this.connectionLimiter = connectionLimiter;
         this.databaseManager = databaseManager;
         this.logger = logger;
         this.proxyMode = proxyMode;
@@ -64,7 +64,7 @@ public class IPWhitelist implements Handler {
         }
 
         try {
-            banManager.checkConnection(clientIP);
+            connectionLimiter.checkConnection(clientIP);
         } catch (IPBanException e) {
             logger.warning("IP " + clientIP + " blocked: " + e.getMessage());
             throw new ForbiddenResponse(e.getMessage());

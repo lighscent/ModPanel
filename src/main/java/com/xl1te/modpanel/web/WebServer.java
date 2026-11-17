@@ -2,7 +2,7 @@ package com.xl1te.modpanel.web;
 
 import com.xl1te.modpanel.Main;
 import com.xl1te.modpanel.utils.BestLogger;
-import com.xl1te.modpanel.web.auth.IPBanManager;
+import com.xl1te.modpanel.web.auth.ConnectionLimiter;
 import com.xl1te.modpanel.web.auth.IPWhitelist;
 import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.api.ApiController;
@@ -32,10 +32,14 @@ public class WebServer {
         Thread.currentThread().setContextClassLoader(plugin.getClass().getClassLoader());
 
         try {
-            IPBanManager banManager = new IPBanManager(plugin, logger,
-                    plugin.getDatabaseManager().getIpBanRepository());
+            ConnectionLimiter connectionLimiter = new ConnectionLimiter(
+                    plugin.getConfig().getBoolean("web-server.connection-limit.enabled", true),
+                    plugin.getConfig().getInt("web-server.connection-limit.ban-after", 10),
+                    plugin.getConfig().getLong("web-server.connection-limit.window-seconds", 60),
+                    plugin.getConfig().getLong("web-server.connection-limit.ban-duration", 600),
+                    plugin.getConfig().getInt("web-server.connection-limit.permanent-ban-threshold", 2));
             HtmlController htmlController = new HtmlController(logger, proxyMode);
-            IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger, proxyMode,
+            IPWhitelist whitelist = new IPWhitelist(connectionLimiter, plugin.getDatabaseManager(), logger, proxyMode,
                     plugin.getConfig().getBoolean("ip-whitelist-enabled", true),
                     plugin.getConfig().getStringList("ip-whitelist"));
             ApiController apiController = new ApiController(plugin, sessionManager, logger, proxyMode);
