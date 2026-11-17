@@ -53,8 +53,9 @@ public class UserRepository {
             }
         }
         // Fallback if driver returns no generated key: re-read the row just inserted.
-        return findByUsername(user.getUsername()).map(User::getId)
-                .orElseThrow(() -> new SQLException("Failed to retrieve generated user id"));
+        var created = findByUsername(user.getUsername());
+        if (created.isPresent()) return created.get().getId();
+        throw new SQLException("Failed to retrieve generated user id");
     }
 
     public void update(User user) throws SQLException {
