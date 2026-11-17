@@ -15,6 +15,7 @@ import io.javalin.http.Context;
 import io.javalin.http.Handler;
 
 import java.lang.reflect.Type;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -149,7 +150,7 @@ public class ApiController implements Handler {
      * Changement de mot de passe sans session (premier login forcé) : prouve la
      * connaissance du mot de passe actuel. Soumis au même limiteur que le login.
      */
-    private void handlePasswordChange(Context ctx) throws Exception {
+    private void handlePasswordChange(Context ctx) throws SQLException {
         Map<String, Object> body = jsonBody(ctx);
         String username = str(body, FIELD_USERNAME);
         String currentPassword = str(body, "currentPassword");
