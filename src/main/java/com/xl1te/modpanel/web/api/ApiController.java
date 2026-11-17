@@ -231,7 +231,7 @@ public class ApiController implements Handler {
                 Map<String, Object> p = new LinkedHashMap<>();
                 p.put("name", player.getName());
                 p.put("uuid", player.getUniqueId().toString());
-                p.put("ip", player.getAddress().getAddress().getHostAddress());
+                p.put("ip", logger.processMessage(player.getAddress().getAddress().getHostAddress()));
                 p.put("world", player.getWorld().getName());
                 p.put("health", (int) player.getHealth());
                 p.put("maxHealth", (int) getMaxHealth(player));
@@ -287,7 +287,7 @@ public class ApiController implements Handler {
         d.put("name", player.getName());
         d.put("uuid", player.getUniqueId().toString());
         d.put("displayName", player.getDisplayName());
-        d.put("ip", player.getAddress().getAddress().getHostAddress());
+        d.put("ip", logger.processMessage(player.getAddress().getAddress().getHostAddress()));
         d.put("world", player.getWorld().getName());
         d.put("x", player.getLocation().getX());
         d.put("y", player.getLocation().getY());
