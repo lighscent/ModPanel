@@ -92,8 +92,7 @@ public class DatabaseManager {
             this.permissionRepository = new PermissionRepository(this);
 
         } catch (Exception e) {
-            logger.severe("Failed to initialize database: " + e.getMessage());
-            e.printStackTrace();
+            logger.severe("Failed to initialize database: " + e.getMessage(), e);
         }
     }
 

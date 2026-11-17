@@ -2,6 +2,7 @@ package com.xl1te.modpanel.utils;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 public class BestLogger {
@@ -35,6 +36,10 @@ public class BestLogger {
 
     public void severe(String message) {
         plugin.getLogger().severe("\u001B[31m" + processMessage(message) + "\u001B[0m");
+    }
+
+    public void severe(String message, Throwable error) {
+        plugin.getLogger().log(Level.SEVERE, "\u001B[31m" + processMessage(message) + "\u001B[0m", error);
     }
 
 }
