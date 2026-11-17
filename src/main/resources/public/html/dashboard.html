@@ -36,10 +36,9 @@
       }
       .topbar-left { display: flex; align-items: center; gap: 0.55rem; }
       .topbar-logo {
-        color: #ffffff;
-        display: grid; place-items: center;
         width: 24px; height: 24px;
-        font-size: 1.05rem;
+        border-radius: 6px;
+        object-fit: cover;
       }
       .topbar-title { color: #ffffff; font-size: 1rem; font-weight: 600; letter-spacing: 0.01em; }
       .topbar-right { display: flex; align-items: center; gap: 0.7rem; }
@@ -484,7 +483,7 @@
   <body>
     <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-logo"><i class="fas fa-cube"></i></div>
+        <img class="topbar-logo" src="/img/modpanel_500px.png" alt="ModPanel" />
         <div class="topbar-title">ModPanel</div>
       </div>
       <div class="topbar-right">
