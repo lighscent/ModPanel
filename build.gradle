@@ -1,0 +1,48 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.6.1'
+}
+
+group = 'com.xl1te'
+version = '0.3.0'
+description = 'A powerful moderation panel for your Minecraft server.'
+
+repositories {
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    mavenCentral()
+}
+
+dependencies {
+    // Supplied at runtime by Bukkit / plugin.yml libraries
+    compileOnly 'org.spigotmc:spigot-api:1.19-R0.1-SNAPSHOT'
+    compileOnly 'com.h2database:h2:2.5.252'
+    compileOnly 'com.google.code.gson:gson:2.15.0'
+    compileOnly 'io.javalin:javalin:7.2.4'
+    compileOnly 'net.dv8tion:JDA:6.7.0'
+    compileOnly 'com.zaxxer:HikariCP:7.1.0'
+
+    // Shaded into the plugin jar
+    implementation 'org.bstats:bstats-bukkit:3.2.1'
+    implementation 'at.favre.lib:bcrypt:0.10.2'
+    implementation 'com.google.zxing:core:3.5.4'
+    implementation 'com.google.zxing:javase:3.5.4'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:4.0.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+tasks.named('jar') {
+    enabled = false
+}
+
+tasks.named('shadowJar') {
+    archiveClassifier = ''
+    relocate 'org.bstats', 'com.xl1te.modpanel.bstats'
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}
