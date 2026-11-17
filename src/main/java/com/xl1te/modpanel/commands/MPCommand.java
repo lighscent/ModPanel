@@ -39,6 +39,9 @@ public class MPCommand implements CommandExecutor, TabCompleter {
         if (subCommand.equals("reload")) {
             try {
                 PluginConfig.updateConfig(plugin);
+                if (plugin.getWebServer() != null) {
+                    plugin.getWebServer().reload();
+                }
                 sendMessage(sender, "§aConfiguration reloaded successfully!");
                 logger.info("Configuration reloaded by " + sender.getName());
             } catch (Exception e) {

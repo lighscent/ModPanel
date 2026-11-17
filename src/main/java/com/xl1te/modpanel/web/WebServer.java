@@ -78,6 +78,7 @@ public class WebServer {
             app.start(port);
             logger.info("Web server started on port: " + port);
         } catch (Exception e) {
+            app = null;
             logger.severe("Error during server startup: " + e.getMessage());
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -108,9 +109,15 @@ public class WebServer {
         return ctx -> checkApiAuth(ctx, apiController);
     }
 
+    public void reload() {
+        stopWebServer();
+        startWebServer();
+    }
+
     public void stopWebServer() {
         if (app != null) {
             app.stop();
+            app = null;
             logger.info("Web server stopped.");
         }
     }
