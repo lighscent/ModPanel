@@ -180,6 +180,8 @@ public class ApiController implements Handler {
         repo.update(new User(user.getId(), user.getUsername(), PasswordHasher.hash(newPassword),
                 user.getRole(), user.isEnabled(), user.getCreatedAt(), user.getLastLogin()));
         repo.clearPasswordChangeRequired(user.getId());
+        // Le mot de passe a changé : les autres sessions ne sont plus dignes de confiance.
+        sessionManager.removeSessionsForUser(user.getUsername());
         ctx.result("{\"ok\":true}");
     }
 
@@ -430,6 +432,10 @@ public class ApiController implements Handler {
             // Mot de passe imposé par un tiers : à changer au prochain login.
             repo.setPasswordChangeRequired(id);
         }
+        if (newPassword != null || !enabled) {
+            // Sessions existantes révoquées : mot de passe changé ou compte désactivé.
+            sessionManager.removeSessionsForUser(user.getUsername());
+        }
         ctx.result("{\"ok\":true}");
     }
 
@@ -443,6 +449,7 @@ public class ApiController implements Handler {
             return;
         }
         plugin.getDatabaseManager().getUserRepository().delete(username);
+        sessionManager.removeSessionsForUser(username);
         ctx.result("{\"ok\":true}");
     }
 

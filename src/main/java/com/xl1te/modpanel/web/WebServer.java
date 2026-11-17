@@ -40,6 +40,8 @@ public class WebServer {
                     plugin.getConfig().getStringList("ip-whitelist"));
             ApiController apiController = new ApiController(plugin, sessionManager, logger, proxyMode);
 
+            sessionManager.start();
+
             app = Javalin.create(config -> {
                 config.staticFiles.add(staticFileConfig -> {
                     staticFileConfig.directory = "public";
@@ -124,6 +126,7 @@ public class WebServer {
     }
 
     public void stopWebServer() {
+        sessionManager.stop();
         if (app != null) {
             app.stop();
             app = null;
