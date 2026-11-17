@@ -37,18 +37,37 @@ public class IPBanRepository {
     }
 
     public void save(IPBanEntry entry) throws SQLException {
-        String sql = "MERGE INTO web_bans (ip, failure_count, ban_count, banned_until, permanent) KEY(ip) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = databaseManager.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Timestamp bannedUntil = entry.getBannedUntil() != null ? Timestamp.from(entry.getBannedUntil()) : null;
+        if (updateRow(entry, bannedUntil) > 0)
+            return;
+        try (Connection conn = databaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO web_bans (ip, failure_count, ban_count, banned_until, permanent) VALUES (?, ?, ?, ?, ?)")) {
             stmt.setString(1, entry.getIp());
             stmt.setInt(2, entry.getFailureCount());
             stmt.setInt(3, entry.getBanCount());
-            if (entry.getBannedUntil() != null) {
-                stmt.setTimestamp(4, Timestamp.from(entry.getBannedUntil()));
-            } else {
-                stmt.setTimestamp(4, null);
-            }
+            stmt.setTimestamp(4, bannedUntil);
             stmt.setBoolean(5, entry.isPermanent());
             stmt.executeUpdate();
+        } catch (SQLException e) {
+            if (com.xl1te.modpanel.database.DatabaseManager.isDuplicateKey(e)) {
+                updateRow(entry, bannedUntil);
+                return;
+            }
+            throw e;
+        }
+    }
+
+    private int updateRow(IPBanEntry entry, Timestamp bannedUntil) throws SQLException {
+        try (Connection conn = databaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "UPDATE web_bans SET failure_count = ?, ban_count = ?, banned_until = ?, permanent = ? WHERE ip = ?")) {
+            stmt.setInt(1, entry.getFailureCount());
+            stmt.setInt(2, entry.getBanCount());
+            stmt.setTimestamp(3, bannedUntil);
+            stmt.setBoolean(4, entry.isPermanent());
+            stmt.setString(5, entry.getIp());
+            return stmt.executeUpdate();
         }
     }
 

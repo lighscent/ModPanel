@@ -24,7 +24,8 @@ import org.bukkit.inventory.PlayerInventory;
 
 public class ApiController implements Handler {
 
-    private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {}.getType();
+    private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
 
     private final Main plugin;
     private final SessionManager sessionManager;
@@ -268,8 +269,7 @@ public class ApiController implements Handler {
         try {
             userId = users.create(user);
         } catch (java.sql.SQLException e) {
-            // Race: pseudo pris entre le contrôle et l'INSERT (classe SQLState 23 = violation d'unicité).
-            if (e.getSQLState() != null && e.getSQLState().startsWith("23")) {
+            if (com.xl1te.modpanel.database.DatabaseManager.isDuplicateKey(e)) {
                 ctx.status(409).result("{\"error\":\"Username already taken\"}");
                 return;
             }

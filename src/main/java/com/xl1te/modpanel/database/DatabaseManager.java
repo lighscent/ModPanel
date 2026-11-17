@@ -138,6 +138,16 @@ public class DatabaseManager {
 
     public Dialect getDialect() { return dialect; }
 
+    /**
+     * Vrai si l'exception est une violation de clé unique/doublon (et rien d'autre :
+     * pas une violation de FK). Codes relevés : 1062 côté MariaDB/MySQL, 23505 côté H2.
+     */
+    public static boolean isDuplicateKey(SQLException e) {
+        if (e == null) return false;
+        int code = e.getErrorCode();
+        return code == 1062 || code == 23505;
+    }
+
     public WebWhitelistRepository getWebWhitelistRepository() {
         if (webWhitelistRepository == null) throw new IllegalStateException("DatabaseManager not initialized");
         return webWhitelistRepository;
