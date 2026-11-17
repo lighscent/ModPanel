@@ -1,31 +1,40 @@
 :root {
 
-    /* Backgrounds */
-    --bg-base: #0f1117;
-    --bg-surface: #181b24;
-    --bg-elevated: #1f2330;
-    --bg-hover: #272b3a;
+    /* Surfaces */
+    --bg-base: #1c2026;
+    --bg-surface: #2b3038;
+    --bg-elevated: #333a44;
+    --bg-hover: #3a424d;
 
-    /* Textes */
-    --text-primary: #e8ecf4;
-    --text-secondary: #8b93a8;
-    --text-muted: #4e5568;
+    /* Text */
+    --text-primary: #e9edf2;
+    --text-secondary: #aeb6c2;
+    --text-muted: #8b95a3;
 
-    /* Accent — Émeraude */
-    --accent: #4de073;
-    --accent-dim: #2ea34f;
-    --accent-glow: #4de07330;
+    /* Accent — panel blue */
+    --accent: #0b74c9;
+    --accent-dim: #095c9e;
+    --accent-glow: rgba(11, 116, 201, 0.24);
 
-    /* États */
-    --success: #4de073;
-    --warning: #ffc940;
-    --error: #ff4757;
-    --info: #4fc3f7;
+    /* States */
+    --success: #4caf6a;
+    --warning: #e0a03a;
+    --error: #d9534f;
+    --info: #3aa6d8;
 
-    /* Bordures */
-    --border: #252936;
-    --border-light: #2e3345;
+    /* Lines and depth */
+    --border: #3a414a;
+    --border-light: #4a525d;
+    --shadow: none;
+    --radius: 6px;
 
-    /* Ombres */
-    --shadow: 0 4px 16px #00000080;
+    /* Aliases used by the dashboard markup and JS */
+    --bg: var(--bg-base);
+    --surface: var(--bg-surface);
+    --surface2: var(--bg-elevated);
+    --text: var(--text-primary);
+    --text-dim: var(--text-secondary);
+    --danger: var(--error);
+    --warn: var(--warning);
+
 }

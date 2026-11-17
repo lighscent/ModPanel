@@ -6,157 +6,197 @@
     <title>ModPanel - Dashboard</title>
     <link rel="stylesheet" href="../css/colors.css" />
     <link rel="stylesheet" href="../css/index.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" referrerpolicy="no-referrer" />
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      :root {
-        --bg: #08080f;
-        --surface: #111118;
-        --surface2: #181824;
-        --border: #1e1e2e;
-        --border-light: #2a2a3e;
-        --accent: #10b981;
-        --accent-dim: #059669;
-        --accent-glow: rgba(16,185,129,0.2);
-        --text: #e2e8f0;
-        --text-dim: #6b7280;
-        --text-muted: #4b5563;
-        --danger: #ef4444;
-        --warn: #f59e0b;
-        --info: #3b82f6;
-        --radius: 12px;
-        --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      html, body {
+        height: 100%;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-size: 15px;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
       }
-      html, body { height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
-      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+      ::-webkit-scrollbar-thumb { background: #4a525d; border: 3px solid var(--bg); border-radius: 6px; }
+      ::-webkit-scrollbar-thumb:hover { background: #5b6572; }
 
       .topbar {
-        height: 60px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
+        height: 52px;
+        background: var(--accent);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 1.5rem;
+        padding: 0 1.1rem;
         position: sticky;
         top: 0;
         z-index: 100;
       }
-      .topbar-left { display: flex; align-items: center; gap: 1rem; }
+      .topbar-left { display: flex; align-items: center; gap: 0.55rem; }
       .topbar-logo {
-        width: 36px; height: 36px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-        border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 1rem; color: #0a0a0f;
+        color: #ffffff;
+        display: grid; place-items: center;
+        width: 24px; height: 24px;
+        font-size: 1.05rem;
       }
-      .topbar-title { color: var(--text); font-size: 1rem; font-weight: 700; }
-      .topbar-right { display: flex; align-items: center; gap: 1rem; }
-      .topbar-user { color: var(--text-dim); font-size: 0.85rem; }
+      .topbar-title { color: #ffffff; font-size: 1rem; font-weight: 600; letter-spacing: 0.01em; }
+      .topbar-right { display: flex; align-items: center; gap: 0.7rem; }
+      .topbar-user { color: rgba(255, 255, 255, 0.82); font-size: 0.85rem; }
       .btn-logout {
-        background: transparent; border: 1px solid var(--border);
-        color: var(--text-dim); padding: 0.4rem 0.9rem;
-        border-radius: 8px; cursor: pointer; font-size: 0.8rem;
-        transition: all 0.2s;
+        background: transparent; border: 1px solid rgba(255, 255, 255, 0.45);
+        color: #ffffff; padding: 0.3rem 0.7rem;
+        border-radius: 4px; cursor: pointer; font: inherit; font-size: 0.8rem; font-weight: 600;
+        transition: background 0.12s, border-color 0.12s;
       }
-      .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+      .btn-logout:hover { background: rgba(255, 255, 255, 0.16); border-color: #ffffff; }
 
-      .layout { display: flex; min-height: calc(100vh - 60px); }
+      .layout { display: flex; min-height: calc(100vh - 52px); }
       .sidebar {
-        width: 210px;
-        background: var(--surface);
-        border-right: 1px solid var(--border);
-        padding: 1rem 0;
-        flex-shrink: 0;
+        width: 224px;
+        flex: 0 0 224px;
+        background: #23272d;
+        border-right: 1px solid #343a42;
+        padding: 0.55rem 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        position: sticky;
+        top: 52px;
+        align-self: flex-start;
+        height: calc(100vh - 52px);
+        overflow-y: auto;
+      }
+      .sidebar-section {
+        padding: 0.35rem 0.75rem 0.3rem;
+        color: var(--text-muted);
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+      }
+      .sidebar-section + .sidebar-section,
+      .sidebar-item + .sidebar-section {
+        margin-top: 0.5rem;
+        border-top: 1px solid #343a42;
+        padding-top: 0.7rem;
       }
       .sidebar-item {
         display: flex;
         align-items: center;
         gap: 0.7rem;
-        padding: 0.75rem 1.3rem;
+        padding: 0.58rem 0.75rem;
+        border-left: 3px solid transparent;
+        border-radius: 0 4px 4px 0;
         color: var(--text-dim);
         cursor: pointer;
-        font-size: 0.85rem;
-        border-left: 3px solid transparent;
-        transition: all 0.2s;
+        font-size: 0.9rem;
         font-weight: 500;
+        transition: background 0.12s, color 0.12s, border-color 0.12s;
       }
-      .sidebar-item:hover {
-        background: rgba(16,185,129,0.04);
-        color: var(--text);
-      }
+      .sidebar-item:hover { background: #2b3038; color: var(--text); }
       .sidebar-item.active {
-        color: var(--accent);
-        border-left-color: var(--accent);
-        background: rgba(16,185,129,0.08);
+        background: rgba(47, 159, 224, 0.13);
+        border-left-color: #2f9fe0;
+        color: #ffffff;
+        font-weight: 600;
       }
-      .sidebar-icon {
-        width: 20px; text-align: center;
-        font-size: 1rem;
-      }
+      .sidebar-item.active .sidebar-icon { color: #7fc4e8; }
+      .sidebar-icon { width: 18px; text-align: center; font-size: 0.95rem; }
 
       .main-content {
         flex: 1;
-        padding: 1.5rem 2rem;
+        min-width: 0;
+        background: var(--bg);
+        padding: 1.5rem 1.75rem 3rem;
         overflow-y: auto;
       }
       .page-header {
         font-size: 1.3rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin-bottom: 1.1rem;
         color: var(--text);
         display: flex;
         align-items: center;
         gap: 0.5rem;
       }
+      .page-header i { font-size: 0.9em; color: var(--text-muted); }
+      .topbar-logo i { font-size: 1.05rem; }
+      .stat-label i { margin-right: 0.3rem; }
+      .section-title i { margin-right: 0.35rem; color: var(--text-muted); font-size: 0.9em; }
+      .btn i, .btn-logout i, .back-btn i { font-size: 0.85em; }
+      .empty-state i { display: block; font-size: 1.15rem; margin-bottom: 0.35rem; opacity: 0.5; }
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 1.4rem;
       }
       .stat-card {
+        position: relative;
+        overflow: hidden;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 1.2rem 1.4rem;
-        transition: all 0.2s;
+        padding: 0.95rem 1.05rem 1rem;
+        color: #ffffff;
       }
-      .stat-card:hover {
-        border-color: var(--border-light);
-        transform: translateY(-1px);
-        box-shadow: var(--shadow);
+      .stat-card.stat-teal { background: linear-gradient(135deg, #1c8296, #12606f); border-color: #1c8296; }
+      .stat-card.stat-green { background: linear-gradient(135deg, #218a49, #16602f); border-color: #218a49; }
+      .stat-card.stat-amber { background: linear-gradient(135deg, #bd7c1f, #8c5a12); border-color: #bd7c1f; }
+      .stat-card.stat-red { background: linear-gradient(135deg, #b8433e, #8c2f2b); border-color: #b8433e; }
+      .stat-card.stat-blue { background: linear-gradient(135deg, #1a6fa8, #14517c); border-color: #1a6fa8; }
+      .stat-ghost {
+        position: absolute;
+        right: 0.7rem;
+        bottom: 0.5rem;
+        font-size: 2.9rem;
+        color: rgba(255, 255, 255, 0.14);
+        pointer-events: none;
       }
       .stat-label {
-        color: var(--text-dim);
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-weight: 600;
-        margin-bottom: 0.4rem;
+        color: rgba(255, 255, 255, 0.94);
+        font-size: 0.95rem;
+        font-weight: 500;
+        letter-spacing: 0;
+        text-transform: none;
+        margin-bottom: 0.25rem;
       }
+      .stat-card[class="stat-card"] .stat-label { color: var(--text-secondary); }
       .stat-value {
-        font-size: 1.8rem;
+        position: relative;
+        font-size: 2.05rem;
         font-weight: 700;
-        color: var(--accent);
-        line-height: 1.2;
+        color: #ffffff;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
       }
       .stat-value.warning { color: var(--warn); }
       .stat-value.danger { color: var(--danger); }
+      .stat-text {
+        font-size: 1.15rem;
+        font-weight: 600;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        padding-right: 2.2rem;
+      }
       .stat-sub {
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        margin-top: 0.3rem;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 0.84rem;
+        margin-top: 0.55rem;
       }
 
       .section-title {
         font-size: 1rem;
         font-weight: 600;
-        margin: 1.5rem 0 0.8rem;
+        margin: 1.4rem 0 0.6rem;
         color: var(--text);
       }
 
@@ -169,224 +209,235 @@
       .table-wrap table { width: 100%; border-collapse: collapse; }
       .table-wrap th {
         text-align: left;
-        padding: 0.75rem 1rem;
-        background: rgba(255,255,255,0.02);
-        color: var(--text-dim);
-        font-size: 0.7rem;
+        padding: 0.58rem 0.9rem;
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        font-size: 0.73rem;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         font-weight: 600;
         border-bottom: 1px solid var(--border);
       }
       .table-wrap td {
-        padding: 0.65rem 1rem;
+        padding: 0.55rem 0.9rem;
         border-bottom: 1px solid var(--border);
-        font-size: 0.85rem;
+        font-size: 0.87rem;
       }
       .table-wrap tr:last-child td { border-bottom: none; }
-      .table-wrap tr { transition: background 0.15s; }
-      .table-wrap tr:hover { background: rgba(255,255,255,0.02); }
+      .table-wrap tbody tr:hover { background: #333a44; }
       .table-wrap tr.clickable { cursor: pointer; }
-      .table-wrap tr.clickable:hover { background: rgba(16,185,129,0.04); }
+      .table-wrap tr.clickable:hover { background: #36414c; }
 
       .ping-badge {
-        padding: 0.15rem 0.5rem;
+        display: inline-block;
+        padding: 0.05rem 0.4rem;
         border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
+        font-variant-numeric: tabular-nums;
       }
-      .ping-good { background: rgba(16,185,129,0.12); color: var(--accent); }
-      .ping-warn { background: rgba(245,158,11,0.12); color: var(--warn); }
-      .ping-bad { background: rgba(239,68,68,0.12); color: var(--danger); }
+      .ping-good { background: rgba(76, 175, 106, 0.18); color: #7fd694; }
+      .ping-warn { background: rgba(224, 160, 58, 0.18); color: #f0bf6e; }
+      .ping-bad { background: rgba(217, 83, 79, 0.2); color: #f19b98; }
 
       .btn {
-        padding: 0.55rem 1rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.8rem;
+        padding: 0.45rem 0.85rem;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 0.82rem;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: background 0.12s, border-color 0.12s, color 0.12s;
       }
-      .btn-primary {
-        background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-        color: #0a0a0f;
-      }
-      .btn-primary:hover {
-        box-shadow: 0 4px 16px var(--accent-glow);
-        transform: translateY(-1px);
-      }
-      .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+      .btn-primary { background: var(--accent); color: #ffffff; }
+      .btn-primary:hover { background: var(--accent-dim); }
+      .btn-sm { padding: 0.25rem 0.55rem; font-size: 0.71rem; }
 
       /* Users */
-      .users-grid { display: grid; gap: 0.6rem; }
+      .users-grid { display: grid; gap: 0.45rem; }
       .user-card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 1rem;
+        border-radius: var(--radius);
+        padding: 0.75rem 0.9rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: border-color 0.2s;
+        gap: 1rem;
+        transition: border-color 0.12s;
       }
       .user-card:hover { border-color: var(--border-light); }
-      .user-info { display: flex; flex-direction: column; gap: 0.2rem; }
+      .user-info { display: flex; flex-direction: column; gap: 0.1rem; }
       .user-name { font-weight: 600; font-size: 0.9rem; }
-      .user-meta { color: var(--text-dim); font-size: 0.75rem; }
-      .user-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+      .user-meta { color: var(--text-dim); font-size: 0.78rem; }
+      .user-badges { display: flex; gap: 0.3rem; flex-wrap: wrap; }
       .badge {
-        padding: 0.15rem 0.55rem; border-radius: 4px;
-        font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+        padding: 0.05rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.64rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
-      .badge-admin { background: rgba(239,68,68,0.12); color: var(--danger); }
-      .badge-mod { background: rgba(16,185,129,0.12); color: var(--accent); }
-      .badge-disabled { background: rgba(107,114,128,0.12); color: var(--text-dim); }
+      .badge-admin { background: rgba(217, 83, 79, 0.18); color: #f19b98; }
+      .badge-mod { background: rgba(76, 175, 106, 0.16); color: #7fd694; }
+      .badge-disabled { background: rgba(174, 182, 194, 0.14); color: var(--text-dim); }
 
-      .refresh-info { color: var(--text-muted); font-size: 0.75rem; margin-top: 1rem; text-align: right; }
+      .refresh-info { color: var(--text-muted); font-size: 0.75rem; margin-top: 0.8rem; text-align: right; }
 
       /* Modal overlay */
       .modal-overlay {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.7);
+        background: rgba(10, 13, 17, 0.66);
         z-index: 200;
         align-items: center;
         justify-content: center;
-        backdrop-filter: blur(4px);
       }
       .modal-overlay.active { display: flex; }
       .modal-box {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 2rem;
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+        border-radius: 6px;
+        padding: 1.4rem;
         width: 90%;
-        max-width: 520px;
+        max-width: 460px;
         max-height: 85vh;
         overflow-y: auto;
-        box-shadow: 0 8px 48px rgba(0,0,0,0.6);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
       }
-      .modal-box h3 { margin: 0 0 1rem; color: var(--text); font-size: 1.1rem; }
-      .modal-actions { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 1.2rem; }
+      .modal-box h3 { margin: 0 0 0.85rem; color: var(--text); font-size: 0.95rem; font-weight: 600; }
+      .modal-actions { display: flex; gap: 0.55rem; justify-content: flex-end; margin-top: 1rem; }
 
       /* Player detail */
       .player-detail-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+        gap: 0.1rem 1.5rem;
         margin-bottom: 1rem;
       }
       .detail-row {
         display: flex;
         justify-content: space-between;
-        padding: 0.4rem 0;
+        gap: 1rem;
+        padding: 0.35rem 0;
         border-bottom: 1px solid var(--border);
-        font-size: 0.85rem;
+        font-size: 0.87rem;
       }
       .detail-label { color: var(--text-dim); }
-      .detail-value { color: var(--text); font-weight: 500; }
+      .detail-value { color: var(--text); font-weight: 500; text-align: right; }
 
       .inv-grid {
         display: grid;
         grid-template-columns: repeat(9, 1fr);
-        gap: 2px;
+        gap: 3px;
         margin-bottom: 4px;
       }
       .inv-slot {
         aspect-ratio: 1;
-        background: rgba(0,0,0,0.35);
-        border: 1px solid var(--border);
-        border-radius: 4px;
+        background: #333a44;
+        border: 1px solid #454d58;
+        border-radius: 3px;
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
-        min-height: 44px;
+        min-height: 40px;
         max-width: 44px;
       }
       .inv-slot img {
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         image-rendering: pixelated;
       }
       .inv-slot .item-count {
         position: absolute;
-        bottom: 1px;
-        right: 3px;
-        font-size: 0.6rem;
+        bottom: 0;
+        right: 2px;
+        font-size: 0.62rem;
         font-weight: 700;
-        color: #fff;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+        color: #ffffff;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.85);
       }
-      .inv-slot .fa-fallback {
-        font-size: 1rem;
-        color: var(--text-dim);
-      }
+      .inv-slot .fa-fallback { font-size: 0.9rem; color: var(--text-muted); }
       .inv-row-label {
-        font-size: 0.55rem;
+        font-size: 0.59rem;
         color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin: 0.4rem 0 0.2rem;
+        letter-spacing: 0.07em;
+        margin: 0.5rem 0 0.25rem;
       }
       .armor-slots {
         display: flex;
-        gap: 3px;
+        gap: 4px;
         margin-bottom: 0.5rem;
       }
       .armor-slots .inv-slot { width: 40px; height: 40px; }
 
-      .sub-section { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin: 0.8rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+      .sub-section {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: var(--text-dim);
+        margin: 0.9rem 0 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
 
       .effect-chip {
         display: inline-block;
-        padding: 0.2rem 0.5rem;
-        background: rgba(59,130,246,0.1);
-        border: 1px solid rgba(59,130,246,0.2);
-        border-radius: 6px;
+        padding: 0.1rem 0.45rem;
+        background: rgba(58, 166, 216, 0.14);
+        border: 1px solid rgba(58, 166, 216, 0.3);
+        border-radius: 4px;
         font-size: 0.7rem;
-        color: var(--info);
-        margin: 0.2rem;
+        color: #86cdec;
+        margin: 0.15rem 0.2rem 0 0;
       }
 
       .empty-state {
         color: var(--text-dim);
-        font-size: 0.85rem;
-        padding: 1rem;
+        font-size: 0.86rem;
+        padding: 1.4rem 1rem;
         text-align: center;
+        border: 1px dashed var(--border-light);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.02);
       }
 
       .back-btn {
         background: transparent;
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-light);
         color: var(--text-dim);
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
+        padding: 0.3rem 0.65rem;
+        border-radius: 4px;
         cursor: pointer;
+        font: inherit;
         font-size: 0.8rem;
-        transition: all 0.2s;
-        margin-bottom: 1rem;
+        font-weight: 600;
+        transition: border-color 0.12s, color 0.12s;
+        margin-bottom: 0.9rem;
       }
-      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+      .back-btn:hover { border-color: var(--accent); color: #ffffff; }
 
-      .form-group { margin-bottom: 0.8rem; }
+      .form-group { margin-bottom: 0.7rem; }
       .form-group label {
         display: block;
         color: var(--text-dim);
-        font-size: 0.75rem;
-        font-weight: 500;
-        margin-bottom: 0.3rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
       }
       .form-group input, .form-group select {
         width: 100%;
-        padding: 0.55rem 0.8rem;
-        background: #1a1a24;
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        padding: 0.45rem 0.65rem;
+        background: #23272d;
+        border: 1px solid var(--border-light);
+        border-radius: 4px;
         color: var(--text);
-        font-size: 0.85rem;
+        font: inherit;
+        font-size: 0.86rem;
         box-sizing: border-box;
       }
       .form-group input:focus, .form-group select:focus {
@@ -396,40 +447,61 @@
       }
 
       .coords {
-        font-family: 'Courier New', monospace;
-        color: var(--accent);
-        font-size: 0.85rem;
+        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+        color: #7fc4e8;
+        font-size: 0.8rem;
       }
 
-      @media (max-width: 768px) {
-        .sidebar { display: none; }
-        .main-content { padding: 1rem; }
-        .stats-grid { grid-template-columns: 1fr 1fr; }
+      @media (max-width: 860px) {
+        .layout { flex-direction: column; }
+        .sidebar {
+          width: 100%;
+          flex: 0 0 auto;
+          height: auto;
+          position: sticky;
+          top: 52px;
+          z-index: 90;
+          flex-direction: row;
+          border-right: 0;
+          border-bottom: 1px solid #343a42;
+          padding: 0.35rem 0.45rem;
+          gap: 0.2rem;
+          overflow-x: auto;
+        }
+        .sidebar-section { display: none; }
+        .sidebar-item { white-space: nowrap; padding: 0.4rem 0.6rem; border-left: 0; border-radius: 0; border-bottom: 2px solid transparent; }
+        .sidebar-item.active { border-bottom-color: #2f9fe0; border-left: 0; }
+        .sidebar-icon { width: auto; }
+        .main-content { padding: 1rem 1rem 2.5rem; }
+        .stats-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
         .player-detail-grid { grid-template-columns: 1fr; }
-        .inv-grid { grid-template-columns: repeat(7, 1fr); }
+        .table-wrap { overflow-x: auto; }
+        .table-wrap table { min-width: 520px; }
       }
     </style>
   </head>
   <body>
     <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-logo">M</div>
+        <div class="topbar-logo"><i class="fas fa-cube"></i></div>
         <div class="topbar-title">ModPanel</div>
       </div>
       <div class="topbar-right">
         <span class="topbar-user" id="usernameDisplay"></span>
-        <button class="btn-logout" onclick="logout()">Logout</button>
+        <button class="btn-logout" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
 
     <div class="layout">
       <div class="sidebar">
+        <div class="sidebar-section">Monitoring</div>
         <div class="sidebar-item active" data-page="dashboard">
           <i class="fas fa-chart-simple sidebar-icon"></i> Dashboard
         </div>
         <div class="sidebar-item" data-page="players">
           <i class="fas fa-users sidebar-icon"></i> Players
         </div>
+        <div class="sidebar-section">Administration</div>
         <div class="sidebar-item" data-page="users">
           <i class="fas fa-user-shield sidebar-icon"></i> Users
         </div>
@@ -449,7 +521,7 @@
 
     <div class="modal-overlay" id="createUserModal">
       <div class="modal-box">
-        <h3>Create User</h3>
+        <h3><i class="fas fa-user-plus"></i> Create User</h3>
         <div class="form-group">
           <label>Username</label>
           <input id="newUsername" />
@@ -466,8 +538,8 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-dim)" onclick="document.getElementById('createUserModal').classList.remove('active')">Cancel</button>
-          <button class="btn btn-primary" onclick="createUser()">Create</button>
+          <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-dim)" onclick="document.getElementById('createUserModal').classList.remove('active')"><i class="fas fa-xmark"></i> Cancel</button>
+          <button class="btn btn-primary" onclick="createUser()"><i class="fas fa-check"></i> Create</button>
         </div>
       </div>
     </div>
@@ -532,32 +604,38 @@
           const res = await apiFetch('/api/stats');
           const d = await res.json();
           if (!d || typeof d.playerCount === 'undefined') {
-            document.getElementById('page-dashboard').innerHTML = '<div class="page-header">Dashboard</div><div class="stat-card" style="color:var(--danger)">Failed to load stats</div>';
+            document.getElementById('page-dashboard').innerHTML = '<div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div><div class="stat-card" style="color:var(--danger)">Failed to load stats</div>';
             return;
           }
           const tpsColor = d.tps < 15 ? 'danger' : d.tps < 18 ? 'warning' : '';
-          const playerColor = d.playerCount >= d.maxPlayers ? 'danger' : '';
+          const rawVersion = d.mcVersion || '';
+          const mcMatch = rawVersion.match(/\(MC:\s*([^)]+)\)/);
+          const mcVersion = mcMatch ? mcMatch[1].trim() : rawVersion;
+          const implVersion = rawVersion.replace(/\s*\(MC:.*$/, '').trim();
 
           document.getElementById('page-dashboard').innerHTML = `
-            <div class="page-header">Dashboard</div>
+            <div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div>
             <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-label">Players Online</div>
-                <div class="stat-value ${playerColor}">${d.playerCount}<span style="font-size:1rem;color:var(--text-dim)">/${d.maxPlayers}</span></div>
+              <div class="stat-card stat-teal">
+                <i class="fas fa-user-group stat-ghost"></i>
+                <div class="stat-label"><i class="fas fa-user-group"></i>Players Online</div>
+                <div class="stat-value">${d.playerCount}<span style="font-size:1.1rem;color:rgba(255,255,255,0.7)">/${d.maxPlayers}</span></div>
                 <div class="stat-sub">${d.serverName || 'Minecraft Server'}</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-label">TPS</div>
-                <div class="stat-value ${tpsColor}">${d.tps.toFixed(1)}</div>
+              <div class="stat-card ${tpsColor === 'danger' ? 'stat-red' : tpsColor === 'warning' ? 'stat-amber' : 'stat-green'}">
+                <i class="fas fa-gauge-high stat-ghost"></i>
+                <div class="stat-label"><i class="fas fa-gauge-high"></i>TPS</div>
+                <div class="stat-value">${d.tps.toFixed(1)}</div>
                 <div class="stat-sub">Target: 20.0</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-label">Server</div>
-                <div class="stat-value" style="font-size:1rem">${d.mcVersion ? d.mcVersion.substring(0, 20) + '...' : 'N/A'}</div>
+              <div class="stat-card stat-blue">
+                <i class="fas fa-server stat-ghost"></i>
+                <div class="stat-label"><i class="fas fa-server"></i>Server</div>
+                <div class="stat-value stat-text" title="${escapeHtml(implVersion)}">${escapeHtml((d.serverName || 'Server') + ': ' + (mcVersion || 'N/A'))}</div>
                 <div class="stat-sub">Version</div>
               </div>
             </div>
-            <div class="section-title">Online Players</div>
+            <div class="section-title"><i class="fas fa-users"></i>Online Players</div>
             <div id="dashboard-players-list"></div>
             <div class="refresh-info" id="refreshInfo"></div>
           `;
@@ -569,13 +647,13 @@
               const s = await r.json();
               if (s && s.playerCount !== undefined) {
                 const cards = document.querySelectorAll('.stat-value');
-                if (cards[0]) cards[0].innerHTML = s.playerCount + '<span style="font-size:1rem;color:var(--text-dim)">/' + s.maxPlayers + '</span>';
+                if (cards[0]) cards[0].innerHTML = s.playerCount + '<span style="font-size:1.1rem;color:rgba(255,255,255,0.7)">/' + s.maxPlayers + '</span>';
                 if (cards[1]) cards[1].textContent = s.tps.toFixed(1);
               }
             } catch(e) {}
           }, 5000);
         } catch (e) {
-          document.getElementById('page-dashboard').innerHTML = '<div class="page-header">Dashboard</div><div class="stat-card" style="color:var(--danger)">Failed to load: ' + e.message + '</div>';
+          document.getElementById('page-dashboard').innerHTML = '<div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div><div class="stat-card" style="color:var(--danger)">Failed to load: ' + e.message + '</div>';
         }
       }
 
@@ -587,7 +665,7 @@
           const list = document.getElementById('dashboard-players-list');
           if (!list) return;
           if (players.length === 0) {
-            list.innerHTML = '<div class="empty-state">No players online</div>';
+            list.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i>No players online</div>';
             document.getElementById('refreshInfo').textContent = '';
             return;
           }
@@ -604,7 +682,7 @@
           document.getElementById('refreshInfo').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
         } catch (e) {
           const list = document.getElementById('dashboard-players-list');
-          if (list) list.innerHTML = '<div class="empty-state">Error loading players</div>';
+          if (list) list.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Error loading players</div>';
         }
       }
 
@@ -615,9 +693,9 @@
           const players = await res.json();
           if (!Array.isArray(players)) throw new Error('Invalid response');
 
-          let html = '<div class="page-header">Players</div>';
+          let html = '<div class="page-header"><i class="fas fa-users"></i>Players</div>';
           if (players.length === 0) {
-            html += '<div class="empty-state">No players online</div>';
+            html += '<div class="empty-state"><i class="fas fa-user-slash"></i>No players online</div>';
           } else {
             html += `<div class="table-wrap"><table><thead><tr>
               <th>Player</th><th>World</th><th>Health</th><th>Ping</th><th>IP</th><th>Coords</th><th>Game Mode</th>
@@ -645,7 +723,7 @@
       async function loadPlayerDetail(uuid, name) {
         currentDetailUuid = uuid;
         const container = document.getElementById('page-player-detail');
-        container.innerHTML = '<div class="page-header">Loading...</div>';
+        container.innerHTML = '<div class="page-header"><i class="fas fa-spinner fa-spin"></i>Loading...</div>';
 
         try {
           const res = await apiFetch('/api/players/detail?uuid=' + uuid);
@@ -720,8 +798,8 @@
           }
 
           container.innerHTML = `
-            <button class="back-btn" onclick="backToPlayers()">&larr; Back to Players</button>
-            <div class="page-header">${escapeHtml(p.displayName)}</div>
+            <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+            <div class="page-header"><i class="fas fa-user"></i>${escapeHtml(p.displayName)}</div>
             <div class="stats-grid" style="grid-template-columns:1fr 1fr">
               <div class="stat-card">
                 <div class="player-detail-grid">
@@ -747,8 +825,8 @@
           `;
         } catch (e) {
           container.innerHTML = `
-            <button class="back-btn" onclick="backToPlayers()">&larr; Back to Players</button>
-            <div class="page-header">Error</div>
+            <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+            <div class="page-header"><i class="fas fa-triangle-exclamation"></i>Error</div>
             <div class="empty-state">Failed to load player detail: ${e.message}</div>
           `;
         }
@@ -771,8 +849,8 @@
 
           document.getElementById('page-users').innerHTML = `
             <div class="page-header" style="justify-content:space-between">
-              <span>Users</span>
-              <button class="btn btn-primary btn-sm" onclick="document.getElementById('createUserModal').classList.add('active')">+ Add User</button>
+              <span><i class="fas fa-user-shield"></i> Users</span>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('createUserModal').classList.add('active')"><i class="fas fa-plus"></i> Add User</button>
             </div>
             <div class="users-grid">
               ${users.map(u => `<div class="user-card">
@@ -788,7 +866,7 @@
             </div>
           `;
         } catch (e) {
-          document.getElementById('page-users').innerHTML = '<div class="page-header">Users</div><div class="empty-state">Error loading users</div>';
+          document.getElementById('page-users').innerHTML = '<div class="page-header"><i class="fas fa-user-shield"></i>Users</div><div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Error loading users</div>';
         }
       }
 
@@ -820,19 +898,19 @@
           if (!Array.isArray(entries)) entries = [];
 
           document.getElementById('page-whitelist').innerHTML = `
-            <div class="page-header">IP Whitelist</div>
+            <div class="page-header"><i class="fas fa-shield-halved"></i>IP Whitelist</div>
             <div class="table-wrap">
               <table>
                 <thead><tr><th>IP Address</th><th>Added At</th></tr></thead>
                 <tbody>
-                  ${entries.length === 0 ? '<tr><td colspan="2" style="color:var(--text-dim);text-align:center;padding:1rem">No entries</td></tr>' :
+                  ${entries.length === 0 ? '<tr><td colspan="2" style="color:var(--text-dim);text-align:center;padding:1rem"><i class="fas fa-shield-halved"></i> No entries</td></tr>' :
                     entries.map(e => `<tr><td style="font-family:monospace">${e.ip}</td><td style="color:var(--text-dim)">${e.addedAt || 'N/A'}</td></tr>`).join('')}
                 </tbody>
               </table>
             </div>
           `;
         } catch (e) {
-          document.getElementById('page-whitelist').innerHTML = '<div class="page-header">IP Whitelist</div><div class="empty-state">Error loading whitelist</div>';
+          document.getElementById('page-whitelist').innerHTML = '<div class="page-header"><i class="fas fa-shield-halved"></i>IP Whitelist</div><div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Error loading whitelist</div>';
         }
       }
 

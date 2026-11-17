@@ -1,7 +1,7 @@
-/* Import des couleurs globales */
+/* Global colours */
 @import url('colors.css');
 
-/* Reset et base */
+/* Reset and base */
 * {
     margin: 0;
     padding: 0;
@@ -10,158 +10,159 @@
 
 html,
 body {
-    height: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100%;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--bg-base);
     color: var(--text-primary);
-    line-height: 1.6;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Layout principal */
+a {
+    color: var(--accent);
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Layout */
 #app {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-/* Header */
 .modpanel-header {
     background-color: var(--bg-surface);
     border-bottom: 1px solid var(--border);
-    padding: 1rem 2rem;
-    box-shadow: var(--shadow);
+    padding: 1rem 1.75rem;
 }
 
 .modpanel-header h1 {
-    color: var(--accent);
-    font-size: 1.8rem;
-    font-weight: 600;
-    text-shadow: 0 0 10px var(--accent-glow);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
 }
 
-/* Contenu principal */
 .modpanel-content {
     flex: 1;
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
     width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.75rem;
 }
 
-/* Cartes */
+/* Cards */
 .card {
     background-color: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius);
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     box-shadow: var(--shadow);
-    transition: all 0.3s ease;
-}
-
-.card:hover {
-    background-color: var(--bg-elevated);
-    border-color: var(--border-light);
-    transform: translateY(-2px);
 }
 
 .card-header {
     border-bottom: 1px solid var(--border);
-    padding-bottom: 1rem;
+    padding-bottom: 0.9rem;
     margin-bottom: 1rem;
 }
 
 .card-title {
     color: var(--text-primary);
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
 }
 
 .card-subtitle {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
 }
 
-/* Boutons */
+/* Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
     text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .btn-primary {
     background-color: var(--accent);
-    color: var(--bg-base);
+    color: #ffffff;
 }
 
 .btn-primary:hover {
     background-color: var(--accent-dim);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 .btn-secondary {
-    background-color: var(--bg-elevated);
+    background-color: var(--bg-surface);
+    border-color: var(--border-light);
     color: var(--text-primary);
-    border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--border-light);
+    background-color: var(--bg-elevated);
+    border-color: var(--text-muted);
 }
 
-/* États des boutons */
 .btn-success {
     background-color: var(--success);
-    color: white;
+    color: #ffffff;
 }
 
 .btn-warning {
     background-color: var(--warning);
-    color: var(--bg-base);
+    color: #ffffff;
 }
 
 .btn-error {
     background-color: var(--error);
-    color: white;
+    color: #ffffff;
 }
 
 .btn-info {
     background-color: var(--info);
-    color: white;
+    color: #ffffff;
 }
 
-/* Champs de formulaire */
+/* Forms */
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.1rem;
 }
 
 .form-label {
     display: block;
     color: var(--text-primary);
-    font-weight: 500;
-    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
 }
 
 .form-input {
     width: 100%;
-    padding: 0.75rem;
-    background-color: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
     color: var(--text-primary);
+    font: inherit;
     font-size: 0.9rem;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .form-input:focus {
@@ -174,10 +175,10 @@ body {
     color: var(--text-muted);
 }
 
-/* Grille */
+/* Grid */
 .grid {
     display: grid;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 .grid-2 {
@@ -192,7 +193,7 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
-/* Utilitaires */
+/* Utilities */
 .text-center {
     text-align: center;
 }
@@ -233,7 +234,6 @@ body {
     display: none;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .modpanel-content {
         padding: 1rem;
@@ -241,10 +241,6 @@ body {
 
     .modpanel-header {
         padding: 1rem;
-    }
-
-    .modpanel-header h1 {
-        font-size: 1.5rem;
     }
 
     .card {
