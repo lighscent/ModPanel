@@ -6,6 +6,8 @@ import com.xl1te.modpanel.utils.ExpiringCache;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
 
+import java.util.List;
+
 public class IPWhitelist implements Handler {
 
     private static final long CACHE_TTL_MS = 30_000;
@@ -14,20 +16,34 @@ public class IPWhitelist implements Handler {
     private final DatabaseManager databaseManager;
     private final BestLogger logger;
     private final boolean proxyMode;
+    private final boolean enabled;
+    private final List<String> configWhitelist;
     private final ExpiringCache<String, Boolean> whitelistCache;
 
-    public IPWhitelist(IPBanManager banManager, DatabaseManager databaseManager, BestLogger logger, boolean proxyMode) {
+    public IPWhitelist(IPBanManager banManager, DatabaseManager databaseManager, BestLogger logger, boolean proxyMode,
+            boolean enabled, List<String> configWhitelist) {
         this.banManager = banManager;
         this.databaseManager = databaseManager;
         this.logger = logger;
         this.proxyMode = proxyMode;
+        this.enabled = enabled;
+        this.configWhitelist = configWhitelist;
         this.whitelistCache = new ExpiringCache<>(CACHE_TTL_MS);
     }
 
     @Override
     public void handle(Context ctx) {
+        if (!enabled) {
+            return;
+        }
+
         String clientIP = getClientIP(ctx);
         logger.info("Incoming connection attempt from " + clientIP);
+
+        if (configWhitelist.contains(clientIP)) {
+            logger.info("IP " + clientIP + " allowed by config whitelist.");
+            return;
+        }
 
         Boolean cached = whitelistCache.get(clientIP);
         if (Boolean.TRUE.equals(cached)) {

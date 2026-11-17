@@ -11,6 +11,11 @@ web-server:
     ban-duration: 600
     permanent-ban-threshold: 2
 
+# Extra IPs allowed to access the web panel, on top of the database whitelist
+# managed with /mp web whitelist. Set enabled to false to accept every IP.
+ip-whitelist-enabled: true
+ip-whitelist: []
+
 # Storage configuration
 # Supported types: h2 (default), mysql, mariadb
 storage:

@@ -26,11 +26,12 @@ This plugin is actually in early development, but here are some of the key featu
 
 The configuration file `config.yml` allows you to manage the web server settings and security options. Below is an example configuration:
 ```yaml
-server-port: 9999              # Web server port
+web-server:
+  port: 9999                   # Web server port
+  proxy-mode: false            # Trust X-Forwarded-For (behind a reverse proxy)
 ip-whitelist-enabled: true     # Enable IP whitelist
-ip-whitelist:                  # List of allowed IP addresses
+ip-whitelist:                  # Extra allowed IP addresses
   - "127.0.0.1"
-  - "0.0.0.0"
 ```
 
 ## Commands
