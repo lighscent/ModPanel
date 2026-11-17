@@ -33,6 +33,8 @@ public class ApiController implements Handler {
     private static final String FIELD_USERNAME = "username";
     private static final String FIELD_PASSWORD = "password";
 
+    private static final String PERM_USERS_MANAGE = "modpanel.users.manage";
+
     private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
 
@@ -357,7 +359,7 @@ public class ApiController implements Handler {
     }
 
     private void handleUserCreate(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage"))
+        if (!requirePermission(ctx, PERM_USERS_MANAGE))
             return;
         Map<String, Object> body = jsonBody(ctx);
         Object rawUsername = body.get(FIELD_USERNAME);
@@ -402,7 +404,7 @@ public class ApiController implements Handler {
     }
 
     private void handleUserUpdate(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage"))
+        if (!requirePermission(ctx, PERM_USERS_MANAGE))
             return;
         Map<String, Object> body = jsonBody(ctx);
         int id;
@@ -460,7 +462,7 @@ public class ApiController implements Handler {
     }
 
     private void handleUserDelete(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage"))
+        if (!requirePermission(ctx, PERM_USERS_MANAGE))
             return;
         Map<String, Object> body = jsonBody(ctx);
         String username = str(body, FIELD_USERNAME);
@@ -474,7 +476,7 @@ public class ApiController implements Handler {
     }
 
     private void handlePermissions(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.manage"))
+        if (!requirePermission(ctx, PERM_USERS_MANAGE))
             return;
         Map<String, Object> body = jsonBody(ctx);
         int userId;
