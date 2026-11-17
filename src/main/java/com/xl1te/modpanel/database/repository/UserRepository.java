@@ -39,21 +39,22 @@ public class UserRepository {
         return Optional.empty();
     }
 
-    public void create(User user) throws SQLException {
-        String sql;
-        if (db.getDialect() == com.xl1te.modpanel.database.DatabaseManager.Dialect.MYSQL) {
-            sql = "INSERT INTO users (username, password_hash, role, enabled) VALUES (?, ?, ?, ?) " +
-                  "ON DUPLICATE KEY UPDATE username=username";
-        } else {
-            sql = "MERGE INTO users (username, password_hash, role, enabled) KEY(username) VALUES (?, ?, ?, ?)";
-        }
-        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+    public int create(User user) throws SQLException {
+        String sql = "INSERT INTO users (username, password_hash, role, enabled) VALUES (?, ?, ?, ?)";
+        try (Connection conn = db.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPasswordHash());
             stmt.setString(3, user.getRole());
             stmt.setBoolean(4, user.isEnabled());
             stmt.executeUpdate();
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1);
+            }
         }
+        // Fallback if driver returns no generated key: re-read the row just inserted.
+        return findByUsername(user.getUsername()).map(User::getId)
+                .orElseThrow(() -> new SQLException("Failed to retrieve generated user id"));
     }
 
     public void update(User user) throws SQLException {

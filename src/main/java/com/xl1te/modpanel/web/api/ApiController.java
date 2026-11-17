@@ -249,18 +249,35 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        String username = body.get("username").toString();
-        String password = body.get("password").toString();
+        Object rawUsername = body.get("username");
+        Object rawPassword = body.get("password");
+        String username = rawUsername == null ? null : rawUsername.toString();
+        String password = rawPassword == null ? null : rawPassword.toString();
         String role = body.getOrDefault("role", "moderator").toString();
-        if (username.isBlank() || password.isBlank()) {
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
             ctx.status(400).result("{\"error\":\"Username and password required\"}");
             return;
         }
+        var users = plugin.getDatabaseManager().getUserRepository();
+        if (users.findByUsername(username).isPresent()) {
+            ctx.status(409).result("{\"error\":\"Username already taken\"}");
+            return;
+        }
         User user = new User(0, username, PasswordHasher.hash(password), role, true, LocalDateTime.now(), null);
-        plugin.getDatabaseManager().getUserRepository().create(user);
+        int userId;
+        try {
+            userId = users.create(user);
+        } catch (java.sql.SQLException e) {
+            // Race: pseudo pris entre le contrôle et l'INSERT (classe SQLState 23 = violation d'unicité).
+            if (e.getSQLState() != null && e.getSQLState().startsWith("23")) {
+                ctx.status(409).result("{\"error\":\"Username already taken\"}");
+                return;
+            }
+            throw e;
+        }
         var perms = plugin.getDatabaseManager().getPermissionRepository();
-        perms.grant(user.getId(), "modpanel.stats");
-        perms.grant(user.getId(), "modpanel.players");
+        perms.grant(userId, "modpanel.stats");
+        perms.grant(userId, "modpanel.players");
         ctx.result("{\"ok\":true,\"username\":\"" + username + "\"}");
     }
 

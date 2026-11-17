@@ -80,8 +80,7 @@ public class Main extends JavaPlugin {
                     "admin", true,
                     java.time.LocalDateTime.now(), null
                 );
-                repo.create(admin);
-                int adminId = repo.findByUsername("admin").get().getId();
+                int adminId = repo.create(admin);
                 perms.grant(adminId, "modpanel.stats");
                 perms.grant(adminId, "modpanel.players");
                 perms.grant(adminId, "modpanel.player.detail");
