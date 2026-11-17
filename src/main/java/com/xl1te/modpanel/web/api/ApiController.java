@@ -31,6 +31,7 @@ import org.bukkit.inventory.PlayerInventory;
 public class ApiController implements Handler {
 
     private static final String FIELD_USERNAME = "username";
+    private static final String FIELD_PASSWORD = "password";
 
     private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
@@ -95,7 +96,7 @@ public class ApiController implements Handler {
     private void handleLogin(Context ctx) throws Exception {
         Map<String, Object> body = jsonBody(ctx);
         Object rawUsername = body.get(FIELD_USERNAME);
-        Object rawPassword = body.get("password");
+        Object rawPassword = body.get(FIELD_PASSWORD);
         String username = rawUsername == null ? null : rawUsername.toString();
         String password = rawPassword == null ? null : rawPassword.toString();
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
@@ -360,7 +361,7 @@ public class ApiController implements Handler {
             return;
         Map<String, Object> body = jsonBody(ctx);
         Object rawUsername = body.get(FIELD_USERNAME);
-        Object rawPassword = body.get("password");
+        Object rawPassword = body.get(FIELD_PASSWORD);
         String username = rawUsername == null ? null : rawUsername.toString();
         String password = rawPassword == null ? null : rawPassword.toString();
         String role = str(body, "role");
@@ -437,7 +438,7 @@ public class ApiController implements Handler {
             return;
         }
         String passwordHash = user.getPasswordHash();
-        String newPassword = str(body, "password");
+        String newPassword = str(body, FIELD_PASSWORD);
         if (newPassword != null) {
             if (newPassword.isBlank() || newPassword.length() > MAX_PASSWORD_LEN) {
                 ctx.status(400).result("{\"error\":\"Invalid password (1-128 chars)\"}");
