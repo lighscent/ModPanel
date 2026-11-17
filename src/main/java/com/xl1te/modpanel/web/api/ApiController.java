@@ -3,6 +3,7 @@ package com.xl1te.modpanel.web.api;
 import com.xl1te.modpanel.Main;
 import com.xl1te.modpanel.database.models.ServerStats;
 import com.xl1te.modpanel.database.models.User;
+import com.xl1te.modpanel.web.ClientIp;
 import com.xl1te.modpanel.web.auth.PasswordHasher;
 import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.auth.SessionManager.Session;
@@ -13,6 +14,8 @@ import com.xl1te.modpanel.utils.GsonProvider;
 import com.google.gson.reflect.TypeToken;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
+import io.javalin.http.HandlerType;
+import io.javalin.config.RoutesConfig;
 
 import java.lang.reflect.Type;
 import java.sql.SQLException;
@@ -24,10 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 public class ApiController implements Handler {
 
@@ -35,6 +35,28 @@ public class ApiController implements Handler {
     private static final String FIELD_PASSWORD = "password";
 
     private static final String PERM_USERS_MANAGE = "modpanel.users.manage";
+
+    /** Table de routage unique : ajouter un endpoint = ajouter une ligne. */
+    public record ApiEndpoint(HandlerType method, String path, boolean auth, String permission, Handler handler) {
+    }
+
+    private final List<ApiEndpoint> apiEndpoints = List.of(
+            new ApiEndpoint(HandlerType.POST, "/api/auth/login", false, null, this::handleLogin),
+            new ApiEndpoint(HandlerType.POST, "/api/auth/logout", false, null, this::handleLogout),
+            new ApiEndpoint(HandlerType.POST, "/api/auth/password", false, null, this::handlePasswordChange),
+            new ApiEndpoint(HandlerType.GET, "/api/auth/session", true, null, this::handleSession),
+            new ApiEndpoint(HandlerType.GET, "/api/stats", true, "modpanel.stats", this::handleStats),
+            new ApiEndpoint(HandlerType.GET, "/api/players", true, "modpanel.players", this::handlePlayers),
+            new ApiEndpoint(HandlerType.GET, "/api/players/detail", true, "modpanel.player.detail",
+                    this::handlePlayerDetail),
+            new ApiEndpoint(HandlerType.GET, "/api/users", true, "modpanel.users.view", this::handleUsers),
+            new ApiEndpoint(HandlerType.POST, "/api/users/create", true, PERM_USERS_MANAGE, this::handleUserCreate),
+            new ApiEndpoint(HandlerType.POST, "/api/users/update", true, PERM_USERS_MANAGE, this::handleUserUpdate),
+            new ApiEndpoint(HandlerType.POST, "/api/users/delete", true, PERM_USERS_MANAGE, this::handleUserDelete),
+            new ApiEndpoint(HandlerType.POST, "/api/permissions", true, PERM_USERS_MANAGE, this::handlePermissions),
+            new ApiEndpoint(HandlerType.GET, "/api/whitelist", true, "modpanel.whitelist", this::handleWhitelist));
+
+    private final Map<String, ApiEndpoint> endpointsByPath = new HashMap<>();
 
     private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
@@ -65,28 +87,46 @@ public class ApiController implements Handler {
                 plugin.getConfig().getBoolean("web-server.login-limit.enabled", true),
                 plugin.getConfig().getInt("web-server.login-limit.max-attempts", 5),
                 plugin.getConfig().getLong("web-server.login-limit.window-seconds", 300));
+        for (ApiEndpoint endpoint : apiEndpoints) {
+            endpointsByPath.put(endpoint.path(), endpoint);
+        }
+    }
+
+    /** Enregistre toutes les routes API d'un coup (EndpointGroup unique). */
+    public void registerApiRoutes(RoutesConfig routes) {
+        for (ApiEndpoint endpoint : apiEndpoints) {
+            if (endpoint.method() == HandlerType.GET) {
+                routes.get(endpoint.path(), this::handle);
+            } else if (endpoint.method() == HandlerType.POST) {
+                routes.post(endpoint.path(), this::handle);
+            } else {
+                throw new IllegalArgumentException("Unsupported method: " + endpoint.method());
+            }
+        }
     }
 
     @Override
     public void handle(Context ctx) {
         String path = ctx.path();
+        ApiEndpoint endpoint = endpointsByPath.get(path);
+        if (endpoint == null) {
+            ctx.status(404).result("{\"error\":\"Not found\"}");
+            return;
+        }
         try {
-            switch (path) {
-                case "/api/auth/login" -> handleLogin(ctx);
-                case "/api/auth/logout" -> handleLogout(ctx);
-                case "/api/auth/session" -> handleSession(ctx);
-                case "/api/auth/password" -> handlePasswordChange(ctx);
-                case "/api/stats" -> handleStats(ctx);
-                case "/api/players" -> handlePlayers(ctx);
-                case "/api/players/detail" -> handlePlayerDetail(ctx);
-                case "/api/users" -> handleUsers(ctx);
-                case "/api/users/create" -> handleUserCreate(ctx);
-                case "/api/users/update" -> handleUserUpdate(ctx);
-                case "/api/users/delete" -> handleUserDelete(ctx);
-                case "/api/permissions" -> handlePermissions(ctx);
-                case "/api/whitelist" -> handleWhitelist(ctx);
-                default -> ctx.status(404).result("{\"error\":\"Not found\"}");
+            if (endpoint.auth()) {
+                Session session = getAuthenticatedSession(ctx);
+                if (session == null) {
+                    ctx.status(401).result("{\"error\":\"Unauthorized\"}");
+                    return;
+                }
+                ctx.attribute("session", session);
+                if (endpoint.permission() != null && !hasPermission(session, endpoint.permission())) {
+                    ctx.status(403).result("{\"error\":\"Permission denied\"}");
+                    return;
+                }
             }
+            endpoint.handler().handle(ctx);
         } catch (IPBanException e) {
             ctx.status(429).result("{\"error\":\"" + e.getMessage() + "\"}");
         } catch (TimeoutException e) {
@@ -151,7 +191,7 @@ public class ApiController implements Handler {
         ctx.result("{\"ok\":true}");
     }
 
-    /** Identité de la session courante (posée par wrapApi/checkApiAuth, snapshot au login). */
+    /** Identité de la session courante (posée par handle(), snapshot au login). */
     private void handleSession(Context ctx) throws Exception {
         Session session = (Session) ctx.attribute("session");
         if (session == null || !session.enabled()) {
@@ -207,8 +247,6 @@ public class ApiController implements Handler {
     }
 
     private void handleStats(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.stats"))
-            return;
         ServerStats stats = callSync(() -> new ServerStats(
                 plugin.getServer().getOnlinePlayers().size(),
                 plugin.getServer().getMaxPlayers(),
@@ -219,26 +257,10 @@ public class ApiController implements Handler {
     }
 
     private void handlePlayers(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.players"))
-            return;
         List<Map<String, Object>> players = callSync(() -> {
             List<Map<String, Object>> list = new ArrayList<>();
             for (Player player : plugin.getServer().getOnlinePlayers()) {
-                Map<String, Object> p = new LinkedHashMap<>();
-                p.put("name", player.getName());
-                p.put("uuid", player.getUniqueId().toString());
-                p.put("ip", logger.processMessage(player.getAddress().getAddress().getHostAddress()));
-                p.put("world", player.getWorld().getName());
-                p.put("health", (int) player.getHealth());
-                p.put("maxHealth", (int) getMaxHealth(player));
-                p.put("gamemode", player.getGameMode().name());
-                p.put("ping", getPlayerPing(player));
-                p.put("locale", player.getLocale());
-                p.put("displayName", player.getDisplayName());
-                p.put("x", (int) player.getLocation().getX());
-                p.put("y", (int) player.getLocation().getY());
-                p.put("z", (int) player.getLocation().getZ());
-                list.add(p);
+                list.add(PlayerData.summary(player, logger::processMessage));
             }
             return list;
         });
@@ -246,8 +268,6 @@ public class ApiController implements Handler {
     }
 
     private void handlePlayerDetail(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.player.detail"))
-            return;
         String uuidStr = ctx.queryParam("uuid");
         if (uuidStr == null || uuidStr.isBlank()) {
             ctx.status(400).result("{\"error\":\"uuid query param required\"}");
@@ -258,7 +278,10 @@ public class ApiController implements Handler {
             ctx.status(400).result("{\"error\":\"Invalid UUID\"}");
             return;
         }
-        Map<String, Object> detail = callSync(() -> collectPlayerDetail(uuid));
+        Map<String, Object> detail = callSync(() -> {
+            Player player = plugin.getServer().getPlayer(uuid);
+            return player == null ? null : PlayerData.detail(player, logger::processMessage);
+        });
         if (detail == null) {
             ctx.status(404).result("{\"error\":\"Player not found or offline\"}");
             return;
@@ -274,94 +297,7 @@ public class ApiController implements Handler {
         }
     }
 
-    /** Collecte synchrone (thread principal) : ne jamais appeler depuis un thread Jetty. */
-    private Map<String, Object> collectPlayerDetail(UUID uuid) {
-        Player player = plugin.getServer().getPlayer(uuid);
-        if (player == null)
-            return null;
-        Map<String, Object> d = new LinkedHashMap<>();
-        d.put("name", player.getName());
-        d.put("uuid", player.getUniqueId().toString());
-        d.put("displayName", player.getDisplayName());
-        d.put("ip", logger.processMessage(player.getAddress().getAddress().getHostAddress()));
-        d.put("world", player.getWorld().getName());
-        d.put("x", player.getLocation().getX());
-        d.put("y", player.getLocation().getY());
-        d.put("z", player.getLocation().getZ());
-        d.put("yaw", (double) player.getLocation().getYaw());
-        d.put("pitch", (double) player.getLocation().getPitch());
-        d.put("health", player.getHealth());
-        d.put("maxHealth", getMaxHealth(player));
-        d.put("food", player.getFoodLevel());
-        d.put("saturation", (double) player.getSaturation());
-        d.put("gamemode", player.getGameMode().name());
-        d.put("ping", getPlayerPing(player));
-        d.put("locale", player.getLocale());
-        d.put("level", player.getLevel());
-        d.put("exp", player.getExp());
-        d.put("totalExperience", player.getTotalExperience());
-        d.put("walkSpeed", player.getWalkSpeed());
-        d.put("flySpeed", player.getFlySpeed());
-        d.put("isFlying", player.isFlying());
-        d.put("isOp", player.isOp());
-        d.put("potionEffects", collectEffects(player));
-        PlayerInventory inv = player.getInventory();
-        d.put("inventory", collectInventory(inv));
-        d.put("armor", collectArmor(inv));
-        putOffhand(d, inv);
-        return d;
-    }
-
-    private static List<Map<String, Object>> collectEffects(Player player) {
-        List<Map<String, Object>> effects = new ArrayList<>();
-        player.getActivePotionEffects().forEach(effect -> {
-            Map<String, Object> eff = new LinkedHashMap<>();
-            eff.put("type", effect.getType().getName());
-            eff.put("amplifier", effect.getAmplifier());
-            eff.put("duration", effect.getDuration() / 20); // ticks to seconds
-            effects.add(eff);
-        });
-        return effects;
-    }
-
-    private static List<Map<String, Object>> collectInventory(PlayerInventory inv) {
-        List<Map<String, Object>> inventory = new ArrayList<>();
-        for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack item = inv.getItem(i);
-            if (item != null && !item.getType().isAir()) {
-                Map<String, Object> slot = new LinkedHashMap<>();
-                slot.put("slot", i);
-                slot.put("type", item.getType().name());
-                slot.put("amount", item.getAmount());
-                inventory.add(slot);
-            }
-        }
-        return inventory;
-    }
-
-    private static List<Map<String, Object>> collectArmor(PlayerInventory inv) {
-        List<Map<String, Object>> armor = new ArrayList<>();
-        for (ItemStack a : inv.getArmorContents()) {
-            if (a != null && !a.getType().isAir()) {
-                Map<String, Object> piece = new LinkedHashMap<>();
-                piece.put("type", a.getType().name());
-                piece.put("amount", a.getAmount());
-                armor.add(piece);
-            }
-        }
-        return armor;
-    }
-
-    private static void putOffhand(Map<String, Object> d, PlayerInventory inv) {
-        ItemStack offhand = inv.getItemInOffHand();
-        if (offhand != null && !offhand.getType().isAir()) {
-            d.put("offhand", offhand.getType().name());
-        }
-    }
-
     private void handleUsers(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.users.view"))
-            return;
         List<User> users = plugin.getDatabaseManager().getUserRepository().list();
         List<Map<String, Object>> out = new ArrayList<>();
         for (User u : users) {
@@ -375,8 +311,6 @@ public class ApiController implements Handler {
     }
 
     private void handleUserCreate(Context ctx) throws Exception {
-        if (!requirePermission(ctx, PERM_USERS_MANAGE))
-            return;
         Map<String, Object> body = jsonBody(ctx);
         Object rawUsername = body.get(FIELD_USERNAME);
         Object rawPassword = body.get(FIELD_PASSWORD);
@@ -420,8 +354,6 @@ public class ApiController implements Handler {
     }
 
     private void handleUserUpdate(Context ctx) throws Exception {
-        if (!requirePermission(ctx, PERM_USERS_MANAGE))
-            return;
         Map<String, Object> body = jsonBody(ctx);
         int id;
         try {
@@ -487,8 +419,6 @@ public class ApiController implements Handler {
     }
 
     private void handleUserDelete(Context ctx) throws Exception {
-        if (!requirePermission(ctx, PERM_USERS_MANAGE))
-            return;
         Map<String, Object> body = jsonBody(ctx);
         String username = str(body, FIELD_USERNAME);
         if (username == null || username.isBlank()) {
@@ -501,8 +431,6 @@ public class ApiController implements Handler {
     }
 
     private void handlePermissions(Context ctx) throws Exception {
-        if (!requirePermission(ctx, PERM_USERS_MANAGE))
-            return;
         Map<String, Object> body = jsonBody(ctx);
         int userId;
         try {
@@ -538,24 +466,8 @@ public class ApiController implements Handler {
     }
 
     private void handleWhitelist(Context ctx) throws Exception {
-        if (!requirePermission(ctx, "modpanel.whitelist"))
-            return;
         var repo = plugin.getDatabaseManager().getWebWhitelistRepository();
         ctx.result(gson().toJson(repo.list()));
-    }
-
-    private boolean requirePermission(Context ctx, String permission) throws Exception {
-        Session session = getAuthenticatedSession(ctx);
-        if (session == null) {
-            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
-            return false;
-        }
-        if (!hasPermission(session, permission)) {
-            ctx.status(403).result("{\"error\":\"Permission denied\"}");
-            return false;
-        }
-        ctx.attribute("session", session);
-        return true;
     }
 
     private Session getAuthenticatedSession(Context ctx) {
@@ -565,13 +477,7 @@ public class ApiController implements Handler {
     }
 
     private String getClientIP(Context ctx) {
-        if (proxyMode) {
-            String xForwardedFor = ctx.header("X-Forwarded-For");
-            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-                return xForwardedFor.split(",")[0].trim();
-            }
-        }
-        return ctx.req().getRemoteAddr();
+        return ClientIp.extract(ctx, proxyMode);
     }
 
     /** Contrôle sur le snapshot de session (rôle, permissions) : 0 requête DB. */
@@ -611,19 +517,6 @@ public class ApiController implements Handler {
             return 20.0;
         } catch (Exception e) {
             return 20.0;
-        }
-    }
-
-    private double getMaxHealth(Player player) {
-        var attribute = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        return attribute != null ? attribute.getValue() : 20.0;
-    }
-
-    private int getPlayerPing(Player player) {
-        try {
-            return player.getPing();
-        } catch (Exception e) {
-            return -1;
         }
     }
 

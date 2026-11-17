@@ -6,7 +6,6 @@ import com.xl1te.modpanel.web.auth.ConnectionLimiter;
 import com.xl1te.modpanel.web.auth.IPWhitelist;
 import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.api.ApiController;
-import com.xl1te.modpanel.web.auth.SessionManager.Session;
 import io.javalin.Javalin;
 import io.javalin.config.RoutesConfig;
 import io.javalin.http.staticfiles.Location;
@@ -102,19 +101,7 @@ public class WebServer {
                     }
                 });
 
-                routes.post("/api/auth/login", apiController::handle);
-                routes.post("/api/auth/logout", apiController::handle);
-                routes.post("/api/auth/password", apiController::handle);
-                routes.get("/api/auth/session", wrapApi(apiController));
-                routes.get("/api/stats", wrapApi(apiController));
-                routes.get("/api/players", wrapApi(apiController));
-                routes.get("/api/players/detail", wrapApi(apiController));
-                routes.get("/api/users", wrapApi(apiController));
-                routes.post("/api/users/create", wrapApi(apiController));
-                routes.post("/api/users/update", wrapApi(apiController));
-                routes.post("/api/users/delete", wrapApi(apiController));
-                routes.post("/api/permissions", wrapApi(apiController));
-                routes.get("/api/whitelist", wrapApi(apiController));
+                apiController.registerApiRoutes(routes);
             });
 
             app.start(port);
@@ -125,30 +112,6 @@ public class WebServer {
         } finally {
             Thread.currentThread().setContextClassLoader(classLoader);
         }
-    }
-
-    private void checkApiAuth(io.javalin.http.Context ctx, ApiController apiController) {
-        String token = SessionManager.extractToken(ctx);
-        if (token == null) {
-            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
-            return;
-        }
-        Session session = sessionManager.getSession(token);
-        if (session == null) {
-            ctx.status(401).result("{\"error\":\"Unauthorized\"}");
-            return;
-        }
-        ctx.attribute("session", session);
-        try {
-            apiController.handle(ctx);
-        } catch (Exception e) {
-            logger.severe("API error: " + e.getMessage());
-            ctx.status(500).result("{\"error\":\"Internal server error\"}");
-        }
-    }
-
-    private io.javalin.http.Handler wrapApi(ApiController apiController) {
-        return ctx -> checkApiAuth(ctx, apiController);
     }
 
     public void reload() {

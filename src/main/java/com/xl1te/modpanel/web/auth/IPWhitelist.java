@@ -3,6 +3,7 @@ package com.xl1te.modpanel.web.auth;
 import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.ExpiringCache;
+import com.xl1te.modpanel.web.ClientIp;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.Handler;
@@ -79,12 +80,6 @@ public class IPWhitelist implements Handler {
     }
 
     private String getClientIP(Context ctx) {
-        if (proxyMode) {
-            String xForwardedFor = ctx.header("X-Forwarded-For");
-            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-                return xForwardedFor.split(",")[0].trim();
-            }
-        }
-        return ctx.req().getRemoteAddr();
+        return ClientIp.extract(ctx, proxyMode);
     }
 }

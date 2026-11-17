@@ -83,6 +83,9 @@ public class DatabaseManager {
             }
 
             createTables();
+            try (Connection conn = getConnection()) {
+                new SchemaMigrator().migrate(conn);
+            }
             this.webWhitelistRepository = new WebWhitelistRepository(this);
             this.ipBanRepository = new IPBanRepository(this);
             this.userRepository = new UserRepository(this);

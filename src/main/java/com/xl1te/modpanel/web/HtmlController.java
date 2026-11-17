@@ -42,12 +42,6 @@ public class HtmlController {
     }
 
     private String getClientIP(Context ctx) {
-        if (proxyMode) {
-            String xForwardedFor = ctx.header("X-Forwarded-For");
-            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-                return xForwardedFor.split(",")[0].trim();
-            }
-        }
-        return ctx.req().getRemoteAddr();
+        return ClientIp.extract(ctx, proxyMode);
     }
 }
