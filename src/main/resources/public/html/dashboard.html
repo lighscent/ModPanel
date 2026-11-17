@@ -668,9 +668,10 @@
           }
           const tpsColor = d.tps < 15 ? 'danger' : d.tps < 18 ? 'warning' : '';
           const rawVersion = d.mcVersion || '';
-          const mcMatch = rawVersion.match(/\(MC:\s*([^)]+)\)/);
-          const mcVersion = mcMatch ? mcMatch[1].trim() : rawVersion;
-          const implVersion = rawVersion.replace(/\s*\(MC:.*$/, '').trim();
+          const mcStart = rawVersion.indexOf('(MC:');
+          const mcEnd = mcStart < 0 ? -1 : rawVersion.indexOf(')', mcStart + 4);
+          const mcVersion = mcEnd > mcStart + 4 ? rawVersion.slice(mcStart + 4, mcEnd).trim() : rawVersion;
+          const implVersion = (mcStart < 0 ? rawVersion : rawVersion.slice(0, mcStart)).trim();
 
           document.getElementById('page-dashboard').innerHTML = `
             <div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div>
