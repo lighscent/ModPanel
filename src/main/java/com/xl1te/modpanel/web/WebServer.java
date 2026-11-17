@@ -8,6 +8,7 @@ import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.api.ApiController;
 import com.xl1te.modpanel.web.auth.SessionManager.Session;
 import io.javalin.Javalin;
+import io.javalin.config.RoutesConfig;
 import io.javalin.http.staticfiles.Location;
 
 public class WebServer {
@@ -31,47 +32,48 @@ public class WebServer {
         Thread.currentThread().setContextClassLoader(plugin.getClass().getClassLoader());
 
         try {
-            app = Javalin.create(config -> {
-                config.staticFiles.add(staticFileConfig -> {
-                    staticFileConfig.directory = "public";
-                    staticFileConfig.location = Location.CLASSPATH;
-                });
-                config.http.defaultContentType = "application/json";
-            });
-
             IPBanManager banManager = new IPBanManager(plugin, logger,
                     plugin.getDatabaseManager().getIpBanRepository());
             HtmlController htmlController = new HtmlController(logger, proxyMode);
             IPWhitelist whitelist = new IPWhitelist(banManager, plugin.getDatabaseManager(), logger, proxyMode);
             ApiController apiController = new ApiController(plugin, sessionManager, logger);
 
-            app.before("/", whitelist);
-            app.before("/{page}", whitelist);
+            app = Javalin.create(config -> {
+                config.staticFiles.add(staticFileConfig -> {
+                    staticFileConfig.directory = "public";
+                    staticFileConfig.location = Location.CLASSPATH;
+                });
+                config.http.defaultContentType = "application/json";
 
-            app.get("/", ctx -> ctx.redirect("/index"));
-            app.get("/{page}", htmlController::serveHtml);
+                RoutesConfig routes = config.routes;
+                routes.before("/", whitelist);
+                routes.before("/{page}", whitelist);
 
-            app.get("/items/{name}", ctx -> {
-                String name = ctx.pathParam("name");
-                java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("assets/minecraft/" + name);
-                if (is != null) {
-                    ctx.contentType("image/png").result(is);
-                } else {
-                    ctx.status(404).result("Not found");
-                }
+                routes.get("/", ctx -> ctx.redirect("/index"));
+                routes.get("/{page}", htmlController::serveHtml);
+
+                routes.get("/items/{name}", ctx -> {
+                    String name = ctx.pathParam("name");
+                    java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("assets/minecraft/" + name);
+                    if (is != null) {
+                        ctx.contentType("image/png").result(is);
+                    } else {
+                        ctx.status(404).result("Not found");
+                    }
+                });
+
+                routes.post("/api/auth/login", apiController::handle);
+                routes.post("/api/auth/logout", apiController::handle);
+                routes.get("/api/stats", wrapApi(apiController));
+                routes.get("/api/players", wrapApi(apiController));
+                routes.get("/api/players/detail", wrapApi(apiController));
+                routes.get("/api/users", wrapApi(apiController));
+                routes.post("/api/users/create", wrapApi(apiController));
+                routes.post("/api/users/update", wrapApi(apiController));
+                routes.post("/api/users/delete", wrapApi(apiController));
+                routes.post("/api/permissions", wrapApi(apiController));
+                routes.get("/api/whitelist", wrapApi(apiController));
             });
-
-            app.post("/api/auth/login", apiController::handle);
-            app.post("/api/auth/logout", apiController::handle);
-            app.get("/api/stats", wrapApi(apiController));
-            app.get("/api/players", wrapApi(apiController));
-            app.get("/api/players/detail", wrapApi(apiController));
-            app.get("/api/users", wrapApi(apiController));
-            app.post("/api/users/create", wrapApi(apiController));
-            app.post("/api/users/update", wrapApi(apiController));
-            app.post("/api/users/delete", wrapApi(apiController));
-            app.post("/api/permissions", wrapApi(apiController));
-            app.get("/api/whitelist", wrapApi(apiController));
 
             app.start(port);
             logger.info("Web server started on port: " + port);

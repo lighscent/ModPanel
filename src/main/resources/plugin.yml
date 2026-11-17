@@ -17,9 +17,8 @@ permissions:
     description: Allows access to ModPanel admin commands
     default: op
 libraries:
-  - com.h2database:h2:2.4.240
-  - com.google.code.gson:gson:2.13.2
-  - io.javalin:javalin:6.7.0
-  - net.dv8tion:JDA:6.3.2
-
-  - com.zaxxer:HikariCP:7.0.2
+  - com.h2database:h2:2.5.252
+  - com.google.code.gson:gson:2.15.0
+  - io.javalin:javalin:7.2.4
+  - net.dv8tion:JDA:6.7.0
+  - com.zaxxer:HikariCP:7.1.0
