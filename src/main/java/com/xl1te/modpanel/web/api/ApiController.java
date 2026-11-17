@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -34,6 +35,14 @@ public class ApiController implements Handler {
 
     /** Délai max d'attente du thread principal (collecte Bukkit). */
     private static final long SYNC_TIMEOUT_SECONDS = 5;
+
+    // Bornes alignées sur le schéma (users.username VARCHAR(50), role VARCHAR(20),
+    // user_permissions.permission VARCHAR(100)) + garde-fou mot de passe.
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("[A-Za-z0-9_.-]{3,50}");
+    private static final Pattern ROLE_PATTERN = Pattern.compile("[A-Za-z0-9_-]{1,20}");
+    private static final Pattern PERMISSION_PATTERN = Pattern.compile("[A-Za-z0-9._*-]{1,100}");
+    private static final int MAX_PASSWORD_LEN = 128;
+    private static final int MAX_LOGIN_NAME_LEN = 50;
 
     private final Main plugin;
     private final SessionManager sessionManager;
@@ -90,6 +99,10 @@ public class ApiController implements Handler {
             ctx.status(400).result("{\"error\":\"Username and password required\"}");
             return;
         }
+        if (username.length() > MAX_LOGIN_NAME_LEN || password.length() > MAX_PASSWORD_LEN) {
+            ctx.status(400).result("{\"error\":\"Invalid username or password format\"}");
+            return;
+        }
         String key = getClientIP(ctx) + "\0" + username.toLowerCase(java.util.Locale.ROOT);
         if (loginLimiter.isBlocked(key)) {
             ctx.header("Retry-After", String.valueOf(loginLimiter.retryAfterSeconds(key)));
@@ -110,8 +123,7 @@ public class ApiController implements Handler {
         loginLimiter.reset(key);
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
-        ctx.result("{\"token\":\"" + token + "\",\"username\":\"" + user.getUsername() + "\",\"role\":\""
-                + user.getRole() + "\"}");
+        ctx.result(gson().toJson(Map.of("token", token, "username", user.getUsername(), "role", user.getRole())));
     }
 
     private void handleLogout(Context ctx) throws Exception {
@@ -281,9 +293,19 @@ public class ApiController implements Handler {
         Object rawPassword = body.get("password");
         String username = rawUsername == null ? null : rawUsername.toString();
         String password = rawPassword == null ? null : rawPassword.toString();
-        String role = body.getOrDefault("role", "moderator").toString();
-        if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            ctx.status(400).result("{\"error\":\"Username and password required\"}");
+        String role = str(body, "role");
+        if (role == null)
+            role = "moderator";
+        if (!USERNAME_PATTERN.matcher(username).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid username (3-50 chars: letters, digits, _ . -)\"}");
+            return;
+        }
+        if (password == null || password.isBlank() || password.length() > MAX_PASSWORD_LEN) {
+            ctx.status(400).result("{\"error\":\"Invalid password (1-128 chars)\"}");
+            return;
+        }
+        if (!ROLE_PATTERN.matcher(role).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid role\"}");
             return;
         }
         var users = plugin.getDatabaseManager().getUserRepository();
@@ -305,26 +327,53 @@ public class ApiController implements Handler {
         var perms = plugin.getDatabaseManager().getPermissionRepository();
         perms.grant(userId, "modpanel.stats");
         perms.grant(userId, "modpanel.players");
-        ctx.result("{\"ok\":true,\"username\":\"" + username + "\"}");
+        ctx.result(gson().toJson(Map.of("ok", true, "username", username)));
     }
 
     private void handleUserUpdate(Context ctx) throws Exception {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        int id = Integer.parseInt(body.get("id").toString());
+        int id;
+        try {
+            id = Integer.parseInt(String.valueOf(body.get("id")));
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("{\"error\":\"Invalid user id\"}");
+            return;
+        }
         var repo = plugin.getDatabaseManager().getUserRepository();
         User user = repo.findById(id).orElse(null);
         if (user == null) {
             ctx.status(404).result("{\"error\":\"User not found\"}");
             return;
         }
-        String role = body.getOrDefault("role", user.getRole()).toString();
-        boolean enabled = Boolean
-                .parseBoolean(body.getOrDefault("enabled", String.valueOf(user.isEnabled())).toString());
+        String role = str(body, "role");
+        if (role == null)
+            role = user.getRole();
+        if (!ROLE_PATTERN.matcher(role).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid role\"}");
+            return;
+        }
+        boolean enabled;
+        Object rawEnabled = body.getOrDefault("enabled", String.valueOf(user.isEnabled()));
+        if (rawEnabled instanceof Boolean b) {
+            enabled = b;
+        } else if (rawEnabled != null
+                && (rawEnabled.toString().equalsIgnoreCase("true")
+                    || rawEnabled.toString().equalsIgnoreCase("false"))) {
+            enabled = Boolean.parseBoolean(rawEnabled.toString());
+        } else {
+            ctx.status(400).result("{\"error\":\"Invalid enabled flag (true/false)\"}");
+            return;
+        }
         String passwordHash = user.getPasswordHash();
-        if (body.containsKey("password") && !body.get("password").toString().isBlank()) {
-            passwordHash = PasswordHasher.hash(body.get("password").toString());
+        String newPassword = str(body, "password");
+        if (newPassword != null) {
+            if (newPassword.isBlank() || newPassword.length() > MAX_PASSWORD_LEN) {
+                ctx.status(400).result("{\"error\":\"Invalid password (1-128 chars)\"}");
+                return;
+            }
+            passwordHash = PasswordHasher.hash(newPassword);
         }
         repo.update(new User(id, user.getUsername(), passwordHash, role, enabled, user.getCreatedAt(),
                 user.getLastLogin()));
@@ -335,7 +384,11 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        String username = body.get("username").toString();
+        String username = str(body, "username");
+        if (username == null || username.isBlank()) {
+            ctx.status(400).result("{\"error\":\"Username required\"}");
+            return;
+        }
         plugin.getDatabaseManager().getUserRepository().delete(username);
         ctx.result("{\"ok\":true}");
     }
@@ -344,9 +397,27 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        int userId = Integer.parseInt(body.get("userId").toString());
-        String action = body.get("action").toString();
-        String permission = body.get("permission").toString();
+        int userId;
+        try {
+            userId = Integer.parseInt(String.valueOf(body.get("userId")));
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("{\"error\":\"Invalid userId\"}");
+            return;
+        }
+        String action = str(body, "action");
+        if (!"grant".equals(action) && !"revoke".equals(action)) {
+            ctx.status(400).result("{\"error\":\"Invalid action (grant/revoke)\"}");
+            return;
+        }
+        String permission = str(body, "permission");
+        if (permission == null || !PERMISSION_PATTERN.matcher(permission).matches()) {
+            ctx.status(400).result("{\"error\":\"Invalid permission (1-100 chars: letters, digits, . _ * -)\"}");
+            return;
+        }
+        if (plugin.getDatabaseManager().getUserRepository().findById(userId).isEmpty()) {
+            ctx.status(404).result("{\"error\":\"User not found\"}");
+            return;
+        }
         var perms = plugin.getDatabaseManager().getPermissionRepository();
         switch (action) {
             case "grant" -> perms.grant(userId, permission);
@@ -454,7 +525,19 @@ public class ApiController implements Handler {
     }
 
     private Map<String, Object> jsonBody(Context ctx) {
-        return ctx.bodyAsClass(BODY_TYPE);
+        // Corps absent ou JSON invalide : map vide pour des 400 explicites, jamais 500.
+        try {
+            Map<String, Object> body = ctx.bodyAsClass(BODY_TYPE);
+            return body != null ? body : Map.of();
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    /** Valeur string d'un champ JSON, ou null si absent/nul. */
+    private static String str(Map<String, Object> body, String key) {
+        Object v = body.get(key);
+        return v == null ? null : v.toString();
     }
 
     private com.google.gson.Gson gson() {
