@@ -428,17 +428,10 @@ public class ApiController implements Handler {
             return;
         }
         boolean enabled;
-        Object rawEnabled = body.getOrDefault("enabled", String.valueOf(user.isEnabled()));
-        if (rawEnabled instanceof Boolean b) {
-            enabled = b;
-        } else if (rawEnabled != null
-                && (rawEnabled.toString().equalsIgnoreCase("true")
-                    || rawEnabled.toString().equalsIgnoreCase("false"))) {
-            enabled = Boolean.parseBoolean(rawEnabled.toString());
-        } else {
-            ctx.status(400).result("{\"error\":\"Invalid enabled flag (true/false)\"}");
+        Boolean parsedEnabled = parseEnabledFlag(body.getOrDefault("enabled", String.valueOf(user.isEnabled())), ctx);
+        if (parsedEnabled == null)
             return;
-        }
+        enabled = parsedEnabled;
         String passwordHash = user.getPasswordHash();
         String newPassword = str(body, FIELD_PASSWORD);
         if (newPassword != null) {
@@ -459,6 +452,19 @@ public class ApiController implements Handler {
             sessionManager.removeSessionsForUser(user.getUsername());
         }
         ctx.result("{\"ok\":true}");
+    }
+
+    private Boolean parseEnabledFlag(Object rawEnabled, Context ctx) {
+        if (rawEnabled instanceof Boolean b) {
+            return b;
+        }
+        if (rawEnabled != null
+                && (rawEnabled.toString().equalsIgnoreCase("true")
+                    || rawEnabled.toString().equalsIgnoreCase("false"))) {
+            return Boolean.parseBoolean(rawEnabled.toString());
+        }
+        ctx.status(400).result("{\"error\":\"Invalid enabled flag (true/false)\"}");
+        return null;
     }
 
     private void handleUserDelete(Context ctx) throws Exception {
