@@ -234,93 +234,110 @@ public class ApiController implements Handler {
             ctx.status(400).result("{\"error\":\"uuid query param required\"}");
             return;
         }
-        UUID uuid;
-        try {
-            uuid = UUID.fromString(uuidStr);
-        } catch (IllegalArgumentException e) {
+        UUID uuid = tryParseUuid(uuidStr);
+        if (uuid == null) {
             ctx.status(400).result("{\"error\":\"Invalid UUID\"}");
             return;
         }
-        Map<String, Object> detail = callSync(() -> {
-            Player player = plugin.getServer().getPlayer(uuid);
-            if (player == null)
-                return null;
-            Map<String, Object> d = new LinkedHashMap<>();
-            d.put("name", player.getName());
-            d.put("uuid", player.getUniqueId().toString());
-            d.put("displayName", player.getDisplayName());
-            d.put("ip", player.getAddress().getAddress().getHostAddress());
-            d.put("world", player.getWorld().getName());
-            d.put("x", player.getLocation().getX());
-            d.put("y", player.getLocation().getY());
-            d.put("z", player.getLocation().getZ());
-            d.put("yaw", (double) player.getLocation().getYaw());
-            d.put("pitch", (double) player.getLocation().getPitch());
-            d.put("health", player.getHealth());
-            d.put("maxHealth", getMaxHealth(player));
-            d.put("food", player.getFoodLevel());
-            d.put("saturation", (double) player.getSaturation());
-            d.put("gamemode", player.getGameMode().name());
-            d.put("ping", getPlayerPing(player));
-            d.put("locale", player.getLocale());
-            d.put("level", player.getLevel());
-            d.put("exp", player.getExp());
-            d.put("totalExperience", player.getTotalExperience());
-            d.put("walkSpeed", player.getWalkSpeed());
-            d.put("flySpeed", player.getFlySpeed());
-            d.put("isFlying", player.isFlying());
-            d.put("isOp", player.isOp());
-
-            // Potion effects
-            List<Map<String, Object>> effects = new ArrayList<>();
-            player.getActivePotionEffects().forEach(effect -> {
-                Map<String, Object> eff = new LinkedHashMap<>();
-                eff.put("type", effect.getType().getName());
-                eff.put("amplifier", effect.getAmplifier());
-                eff.put("duration", effect.getDuration() / 20); // ticks to seconds
-                effects.add(eff);
-            });
-            d.put("potionEffects", effects);
-
-            // Inventory
-            PlayerInventory inv = player.getInventory();
-            List<Map<String, Object>> inventory = new ArrayList<>();
-            for (int i = 0; i < inv.getSize(); i++) {
-                ItemStack item = inv.getItem(i);
-                if (item != null && !item.getType().isAir()) {
-                    Map<String, Object> slot = new LinkedHashMap<>();
-                    slot.put("slot", i);
-                    slot.put("type", item.getType().name());
-                    slot.put("amount", item.getAmount());
-                    inventory.add(slot);
-                }
-            }
-            d.put("inventory", inventory);
-
-            // Armor
-            List<Map<String, Object>> armor = new ArrayList<>();
-            for (ItemStack a : inv.getArmorContents()) {
-                if (a != null && !a.getType().isAir()) {
-                    Map<String, Object> piece = new LinkedHashMap<>();
-                    piece.put("type", a.getType().name());
-                    piece.put("amount", a.getAmount());
-                    armor.add(piece);
-                }
-            }
-            d.put("armor", armor);
-
-            // Offhand
-            ItemStack offhand = inv.getItemInOffHand();
-            if (offhand != null && !offhand.getType().isAir()) {
-                d.put("offhand", offhand.getType().name());
-            }
-            return d;
-        });
+        Map<String, Object> detail = callSync(() -> collectPlayerDetail(uuid));
         if (detail == null) {
             ctx.status(404).result("{\"error\":\"Player not found or offline\"}");
             return;
         }
         ctx.result(gson().toJson(detail));
+    }
+
+    private static UUID tryParseUuid(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** Collecte synchrone (thread principal) : ne jamais appeler depuis un thread Jetty. */
+    private Map<String, Object> collectPlayerDetail(UUID uuid) {
+        Player player = plugin.getServer().getPlayer(uuid);
+        if (player == null)
+            return null;
+        Map<String, Object> d = new LinkedHashMap<>();
+        d.put("name", player.getName());
+        d.put("uuid", player.getUniqueId().toString());
+        d.put("displayName", player.getDisplayName());
+        d.put("ip", player.getAddress().getAddress().getHostAddress());
+        d.put("world", player.getWorld().getName());
+        d.put("x", player.getLocation().getX());
+        d.put("y", player.getLocation().getY());
+        d.put("z", player.getLocation().getZ());
+        d.put("yaw", (double) player.getLocation().getYaw());
+        d.put("pitch", (double) player.getLocation().getPitch());
+        d.put("health", player.getHealth());
+        d.put("maxHealth", getMaxHealth(player));
+        d.put("food", player.getFoodLevel());
+        d.put("saturation", (double) player.getSaturation());
+        d.put("gamemode", player.getGameMode().name());
+        d.put("ping", getPlayerPing(player));
+        d.put("locale", player.getLocale());
+        d.put("level", player.getLevel());
+        d.put("exp", player.getExp());
+        d.put("totalExperience", player.getTotalExperience());
+        d.put("walkSpeed", player.getWalkSpeed());
+        d.put("flySpeed", player.getFlySpeed());
+        d.put("isFlying", player.isFlying());
+        d.put("isOp", player.isOp());
+        d.put("potionEffects", collectEffects(player));
+        PlayerInventory inv = player.getInventory();
+        d.put("inventory", collectInventory(inv));
+        d.put("armor", collectArmor(inv));
+        putOffhand(d, inv);
+        return d;
+    }
+
+    private static List<Map<String, Object>> collectEffects(Player player) {
+        List<Map<String, Object>> effects = new ArrayList<>();
+        player.getActivePotionEffects().forEach(effect -> {
+            Map<String, Object> eff = new LinkedHashMap<>();
+            eff.put("type", effect.getType().getName());
+            eff.put("amplifier", effect.getAmplifier());
+            eff.put("duration", effect.getDuration() / 20); // ticks to seconds
+            effects.add(eff);
+        });
+        return effects;
+    }
+
+    private static List<Map<String, Object>> collectInventory(PlayerInventory inv) {
+        List<Map<String, Object>> inventory = new ArrayList<>();
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack item = inv.getItem(i);
+            if (item != null && !item.getType().isAir()) {
+                Map<String, Object> slot = new LinkedHashMap<>();
+                slot.put("slot", i);
+                slot.put("type", item.getType().name());
+                slot.put("amount", item.getAmount());
+                inventory.add(slot);
+            }
+        }
+        return inventory;
+    }
+
+    private static List<Map<String, Object>> collectArmor(PlayerInventory inv) {
+        List<Map<String, Object>> armor = new ArrayList<>();
+        for (ItemStack a : inv.getArmorContents()) {
+            if (a != null && !a.getType().isAir()) {
+                Map<String, Object> piece = new LinkedHashMap<>();
+                piece.put("type", a.getType().name());
+                piece.put("amount", a.getAmount());
+                armor.add(piece);
+            }
+        }
+        return armor;
+    }
+
+    private static void putOffhand(Map<String, Object> d, PlayerInventory inv) {
+        ItemStack offhand = inv.getItemInOffHand();
+        if (offhand != null && !offhand.getType().isAir()) {
+            d.put("offhand", offhand.getType().name());
+        }
     }
 
     private void handleUsers(Context ctx) throws Exception {
