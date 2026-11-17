@@ -16,6 +16,10 @@ import io.javalin.http.Handler;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -26,6 +30,9 @@ public class ApiController implements Handler {
 
     private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
+
+    /** Délai max d'attente du thread principal (collecte Bukkit). */
+    private static final long SYNC_TIMEOUT_SECONDS = 5;
 
     private final Main plugin;
     private final SessionManager sessionManager;
@@ -57,6 +64,8 @@ public class ApiController implements Handler {
             }
         } catch (IPBanException e) {
             ctx.status(429).result("{\"error\":\"" + e.getMessage() + "\"}");
+        } catch (TimeoutException e) {
+            ctx.status(503).result("{\"error\":\"Server busy, try again\"}");
         } catch (Exception e) {
             logger.severe("API error on " + path + ": " + e.getMessage());
             ctx.status(500).result("{\"error\":\"Internal server error\"}");
@@ -103,37 +112,39 @@ public class ApiController implements Handler {
     private void handleStats(Context ctx) throws Exception {
         if (!requirePermission(ctx, "modpanel.stats"))
             return;
-        double tps = getTPS();
-        ServerStats stats = new ServerStats(
+        ServerStats stats = callSync(() -> new ServerStats(
                 plugin.getServer().getOnlinePlayers().size(),
                 plugin.getServer().getMaxPlayers(),
-                tps,
+                getTPS(),
                 plugin.getServer().getVersion(),
-                plugin.getServer().getName());
+                plugin.getServer().getName()));
         ctx.result(gson().toJson(stats));
     }
 
     private void handlePlayers(Context ctx) throws Exception {
         if (!requirePermission(ctx, "modpanel.players"))
             return;
-        List<Map<String, Object>> players = new ArrayList<>();
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            Map<String, Object> p = new LinkedHashMap<>();
-            p.put("name", player.getName());
-            p.put("uuid", player.getUniqueId().toString());
-            p.put("ip", player.getAddress().getAddress().getHostAddress());
-            p.put("world", player.getWorld().getName());
-            p.put("health", (int) player.getHealth());
-            p.put("maxHealth", (int) getMaxHealth(player));
-            p.put("gamemode", player.getGameMode().name());
-            p.put("ping", getPlayerPing(player));
-            p.put("locale", player.getLocale());
-            p.put("displayName", player.getDisplayName());
-            p.put("x", (int) player.getLocation().getX());
-            p.put("y", (int) player.getLocation().getY());
-            p.put("z", (int) player.getLocation().getZ());
-            players.add(p);
-        }
+        List<Map<String, Object>> players = callSync(() -> {
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                Map<String, Object> p = new LinkedHashMap<>();
+                p.put("name", player.getName());
+                p.put("uuid", player.getUniqueId().toString());
+                p.put("ip", player.getAddress().getAddress().getHostAddress());
+                p.put("world", player.getWorld().getName());
+                p.put("health", (int) player.getHealth());
+                p.put("maxHealth", (int) getMaxHealth(player));
+                p.put("gamemode", player.getGameMode().name());
+                p.put("ping", getPlayerPing(player));
+                p.put("locale", player.getLocale());
+                p.put("displayName", player.getDisplayName());
+                p.put("x", (int) player.getLocation().getX());
+                p.put("y", (int) player.getLocation().getY());
+                p.put("z", (int) player.getLocation().getZ());
+                list.add(p);
+            }
+            return list;
+        });
         ctx.result(gson().toJson(players));
     }
 
@@ -152,82 +163,85 @@ public class ApiController implements Handler {
             ctx.status(400).result("{\"error\":\"Invalid UUID\"}");
             return;
         }
-        Player player = plugin.getServer().getPlayer(uuid);
-        if (player == null) {
+        Map<String, Object> detail = callSync(() -> {
+            Player player = plugin.getServer().getPlayer(uuid);
+            if (player == null)
+                return null;
+            Map<String, Object> d = new LinkedHashMap<>();
+            d.put("name", player.getName());
+            d.put("uuid", player.getUniqueId().toString());
+            d.put("displayName", player.getDisplayName());
+            d.put("ip", player.getAddress().getAddress().getHostAddress());
+            d.put("world", player.getWorld().getName());
+            d.put("x", player.getLocation().getX());
+            d.put("y", player.getLocation().getY());
+            d.put("z", player.getLocation().getZ());
+            d.put("yaw", (double) player.getLocation().getYaw());
+            d.put("pitch", (double) player.getLocation().getPitch());
+            d.put("health", player.getHealth());
+            d.put("maxHealth", getMaxHealth(player));
+            d.put("food", player.getFoodLevel());
+            d.put("saturation", (double) player.getSaturation());
+            d.put("gamemode", player.getGameMode().name());
+            d.put("ping", getPlayerPing(player));
+            d.put("locale", player.getLocale());
+            d.put("level", player.getLevel());
+            d.put("exp", player.getExp());
+            d.put("totalExperience", player.getTotalExperience());
+            d.put("walkSpeed", player.getWalkSpeed());
+            d.put("flySpeed", player.getFlySpeed());
+            d.put("isFlying", player.isFlying());
+            d.put("isOp", player.isOp());
+
+            // Potion effects
+            List<Map<String, Object>> effects = new ArrayList<>();
+            player.getActivePotionEffects().forEach(effect -> {
+                Map<String, Object> eff = new LinkedHashMap<>();
+                eff.put("type", effect.getType().getName());
+                eff.put("amplifier", effect.getAmplifier());
+                eff.put("duration", effect.getDuration() / 20); // ticks to seconds
+                effects.add(eff);
+            });
+            d.put("potionEffects", effects);
+
+            // Inventory
+            PlayerInventory inv = player.getInventory();
+            List<Map<String, Object>> inventory = new ArrayList<>();
+            for (int i = 0; i < inv.getSize(); i++) {
+                ItemStack item = inv.getItem(i);
+                if (item != null && !item.getType().isAir()) {
+                    Map<String, Object> slot = new LinkedHashMap<>();
+                    slot.put("slot", i);
+                    slot.put("type", item.getType().name());
+                    slot.put("amount", item.getAmount());
+                    inventory.add(slot);
+                }
+            }
+            d.put("inventory", inventory);
+
+            // Armor
+            List<Map<String, Object>> armor = new ArrayList<>();
+            for (ItemStack a : inv.getArmorContents()) {
+                if (a != null && !a.getType().isAir()) {
+                    Map<String, Object> piece = new LinkedHashMap<>();
+                    piece.put("type", a.getType().name());
+                    piece.put("amount", a.getAmount());
+                    armor.add(piece);
+                }
+            }
+            d.put("armor", armor);
+
+            // Offhand
+            ItemStack offhand = inv.getItemInOffHand();
+            if (offhand != null && !offhand.getType().isAir()) {
+                d.put("offhand", offhand.getType().name());
+            }
+            return d;
+        });
+        if (detail == null) {
             ctx.status(404).result("{\"error\":\"Player not found or offline\"}");
             return;
         }
-
-        Map<String, Object> detail = new LinkedHashMap<>();
-        detail.put("name", player.getName());
-        detail.put("uuid", player.getUniqueId().toString());
-        detail.put("displayName", player.getDisplayName());
-        detail.put("ip", player.getAddress().getAddress().getHostAddress());
-        detail.put("world", player.getWorld().getName());
-        detail.put("x", player.getLocation().getX());
-        detail.put("y", player.getLocation().getY());
-        detail.put("z", player.getLocation().getZ());
-        detail.put("yaw", (double) player.getLocation().getYaw());
-        detail.put("pitch", (double) player.getLocation().getPitch());
-        detail.put("health", player.getHealth());
-        detail.put("maxHealth", getMaxHealth(player));
-        detail.put("food", player.getFoodLevel());
-        detail.put("saturation", (double) player.getSaturation());
-        detail.put("gamemode", player.getGameMode().name());
-        detail.put("ping", getPlayerPing(player));
-        detail.put("locale", player.getLocale());
-        detail.put("level", player.getLevel());
-        detail.put("exp", player.getExp());
-        detail.put("totalExperience", player.getTotalExperience());
-        detail.put("walkSpeed", player.getWalkSpeed());
-        detail.put("flySpeed", player.getFlySpeed());
-        detail.put("isFlying", player.isFlying());
-        detail.put("isOp", player.isOp());
-
-        // Potion effects
-        List<Map<String, Object>> effects = new ArrayList<>();
-        player.getActivePotionEffects().forEach(effect -> {
-            Map<String, Object> eff = new LinkedHashMap<>();
-            eff.put("type", effect.getType().getName());
-            eff.put("amplifier", effect.getAmplifier());
-            eff.put("duration", effect.getDuration() / 20); // ticks to seconds
-            effects.add(eff);
-        });
-        detail.put("potionEffects", effects);
-
-        // Inventory
-        PlayerInventory inv = player.getInventory();
-        List<Map<String, Object>> inventory = new ArrayList<>();
-        for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack item = inv.getItem(i);
-            if (item != null && !item.getType().isAir()) {
-                Map<String, Object> slot = new LinkedHashMap<>();
-                slot.put("slot", i);
-                slot.put("type", item.getType().name());
-                slot.put("amount", item.getAmount());
-                inventory.add(slot);
-            }
-        }
-        detail.put("inventory", inventory);
-
-        // Armor
-        List<Map<String, Object>> armor = new ArrayList<>();
-        for (ItemStack a : inv.getArmorContents()) {
-            if (a != null && !a.getType().isAir()) {
-                Map<String, Object> piece = new LinkedHashMap<>();
-                piece.put("type", a.getType().name());
-                piece.put("amount", a.getAmount());
-                armor.add(piece);
-            }
-        }
-        detail.put("armor", armor);
-
-        // Offhand
-        ItemStack offhand = inv.getItemInOffHand();
-        if (offhand != null && !offhand.getType().isAir()) {
-            detail.put("offhand", offhand.getType().name());
-        }
-
         ctx.result(gson().toJson(detail));
     }
 
@@ -369,6 +383,21 @@ public class ApiController implements Handler {
             return userPerms.contains(permission);
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Exécute la collecte sur le thread principal Bukkit et attend le résultat.
+     * L'API Bukkit n'est pas thread-safe : les handlers Javalin tournent sur des
+     * threads Jetty et ne doivent jamais toucher joueurs, mondes ou inventaires.
+     */
+    private <T> T callSync(Callable<T> task) throws Exception {
+        Future<T> future = plugin.getServer().getScheduler().callSyncMethod(plugin, task);
+        try {
+            return future.get(SYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         }
     }
 
