@@ -60,6 +60,15 @@ public class WebServer {
                 routes.get("/whitelist", htmlController::serveDashboard);
                 routes.before("/players/{name}", whitelist);
                 routes.get("/players/{name}", htmlController::serveDashboard);
+                routes.get("/favicon.ico", ctx -> {
+                    java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("public/img/favicon.ico");
+                    if (is != null) {
+                        ctx.contentType("image/x-icon").result(is);
+                    } else {
+                        ctx.status(404).result("Not found");
+                    }
+                });
+
                 routes.get("/{page}", htmlController::serveHtml);
 
                 routes.get("/items/{name}", ctx -> {
