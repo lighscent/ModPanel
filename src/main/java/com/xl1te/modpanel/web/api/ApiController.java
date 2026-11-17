@@ -30,6 +30,8 @@ import org.bukkit.inventory.PlayerInventory;
 
 public class ApiController implements Handler {
 
+    private static final String FIELD_USERNAME = "username";
+
     private static final Type BODY_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
 
@@ -92,7 +94,7 @@ public class ApiController implements Handler {
 
     private void handleLogin(Context ctx) throws Exception {
         Map<String, Object> body = jsonBody(ctx);
-        Object rawUsername = body.get("username");
+        Object rawUsername = body.get(FIELD_USERNAME);
         Object rawPassword = body.get("password");
         String username = rawUsername == null ? null : rawUsername.toString();
         String password = rawPassword == null ? null : rawPassword.toString();
@@ -129,7 +131,7 @@ public class ApiController implements Handler {
         }
         repo.updateLastLogin(user.getUsername());
         String token = sessionManager.createSession(user.getUsername());
-        ctx.result(gson().toJson(Map.of("token", token, "username", user.getUsername(), "role", user.getRole())));
+        ctx.result(gson().toJson(Map.of("token", token, FIELD_USERNAME, user.getUsername(), "role", user.getRole())));
     }
 
     private void handleLogout(Context ctx) throws Exception {
@@ -146,7 +148,7 @@ public class ApiController implements Handler {
      */
     private void handlePasswordChange(Context ctx) throws Exception {
         Map<String, Object> body = jsonBody(ctx);
-        String username = str(body, "username");
+        String username = str(body, FIELD_USERNAME);
         String currentPassword = str(body, "currentPassword");
         String newPassword = str(body, "newPassword");
         if (username == null || username.isBlank() || currentPassword == null || currentPassword.isBlank()
@@ -328,7 +330,7 @@ public class ApiController implements Handler {
         List<Map<String, Object>> out = new ArrayList<>();
         for (User u : users) {
             out.add(Map.of(
-                    "id", u.getId(), "username", u.getUsername(),
+                    "id", u.getId(), FIELD_USERNAME, u.getUsername(),
                     "role", u.getRole(), "enabled", u.isEnabled(),
                     "createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : "",
                     "lastLogin", u.getLastLogin() != null ? u.getLastLogin().toString() : ""));
@@ -340,7 +342,7 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        Object rawUsername = body.get("username");
+        Object rawUsername = body.get(FIELD_USERNAME);
         Object rawPassword = body.get("password");
         String username = rawUsername == null ? null : rawUsername.toString();
         String password = rawPassword == null ? null : rawPassword.toString();
@@ -378,7 +380,7 @@ public class ApiController implements Handler {
         var perms = plugin.getDatabaseManager().getPermissionRepository();
         perms.grant(userId, "modpanel.stats");
         perms.grant(userId, "modpanel.players");
-        ctx.result(gson().toJson(Map.of("ok", true, "username", username)));
+        ctx.result(gson().toJson(Map.of("ok", true, FIELD_USERNAME, username)));
     }
 
     private void handleUserUpdate(Context ctx) throws Exception {
@@ -443,7 +445,7 @@ public class ApiController implements Handler {
         if (!requirePermission(ctx, "modpanel.users.manage"))
             return;
         Map<String, Object> body = jsonBody(ctx);
-        String username = str(body, "username");
+        String username = str(body, FIELD_USERNAME);
         if (username == null || username.isBlank()) {
             ctx.status(400).result("{\"error\":\"Username required\"}");
             return;
