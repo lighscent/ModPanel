@@ -61,7 +61,6 @@ public class WebServer {
                 });
                 routes.before("/", whitelist);
                 routes.before("/{page}", whitelist);
-                // L'API exige IP whitelistée + bearer, sauf le flux pré-session.
                 routes.before(ctx -> {
                     String path = ctx.path();
                     if (path.startsWith("/api/") && !path.startsWith("/api/auth/")) {
@@ -93,7 +92,8 @@ public class WebServer {
                         ctx.status(404).result("Not found");
                         return;
                     }
-                    java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("assets/minecraft/" + name);
+                    java.io.InputStream is = getClass().getClassLoader()
+                            .getResourceAsStream("assets/minecraft/" + name);
                     if (is != null) {
                         ctx.contentType("image/png").result(is);
                     } else {

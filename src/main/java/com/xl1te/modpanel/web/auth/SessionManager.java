@@ -13,16 +13,15 @@ public class SessionManager {
     private static final long SESSION_TTL_MS = 86_400_000L;
     private static final long PURGE_INTERVAL_MIN = 30L;
 
-    /** Nom du cookie de session : HttpOnly + SameSite=Strict, jamais exposé au JS. */
     public static final String SESSION_COOKIE = "modpanel_session";
 
     private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<String>> tokensByUser = new ConcurrentHashMap<>();
     private ScheduledExecutorService purger;
 
-    /** Démarre le balayage périodique des tokens expirés. Idempotent (reload). */
     public synchronized void start() {
-        if (purger != null) return;
+        if (purger != null)
+            return;
         purger = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "ModPanel-SessionPurge");
             t.setDaemon(true);
@@ -49,7 +48,8 @@ public class SessionManager {
 
     public Session getSession(String token) {
         Session s = sessions.get(token);
-        if (s == null) return null;
+        if (s == null)
+            return null;
         if (System.currentTimeMillis() - s.createdAt > SESSION_TTL_MS) {
             sessions.remove(token, s);
             removeTokenFromIndex(s.username(), token);
@@ -60,43 +60,40 @@ public class SessionManager {
 
     public void removeSession(String token) {
         Session s = sessions.remove(token);
-        if (s != null) removeTokenFromIndex(s.username(), token);
+        if (s != null)
+            removeTokenFromIndex(s.username(), token);
     }
 
-    /** Cookie de session : HttpOnly + SameSite=Strict (anti-CSRF), Path=/, durée = TTL. */
     public static String sessionCookieHeader(String token) {
         return SESSION_COOKIE + "=" + token + "; Path=/; Max-Age=" + (SESSION_TTL_MS / 1000)
                 + "; HttpOnly; SameSite=Strict";
     }
 
-    /** Expire le cookie de session (logout). */
     public static String clearSessionCookieHeader() {
         return SESSION_COOKIE + "=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict";
     }
 
-    /** Token depuis le cookie en priorité, en-tête Bearer en repli (API programmatique). */
     public static String extractToken(Context ctx) {
         String cookie = ctx.cookie(SESSION_COOKIE);
-        if (cookie != null && !cookie.isBlank()) return cookie;
+        if (cookie != null && !cookie.isBlank())
+            return cookie;
         String auth = ctx.header("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) return auth.substring(7);
+        if (auth != null && auth.startsWith("Bearer "))
+            return auth.substring(7);
         return null;
     }
 
-    /** Révoque toutes les sessions d'un utilisateur (mot de passe, désactivation, suppression). */
     public void removeSessionsForUser(String username) {
         Set<String> tokens = tokensByUser.remove(username);
-        if (tokens != null) tokens.forEach(sessions::remove);
+        if (tokens != null)
+            tokens.forEach(sessions::remove);
     }
 
-    /**
-     * Recharge l'identité snapshotée (rôle, permissions, état) après une
-     * modification sans déconnecter : ne touche que les tokens existants.
-     */
     public void refreshUserSessions(String username, int userId, String role, Set<String> permissions,
             boolean enabled) {
         Set<String> tokens = tokensByUser.get(username);
-        if (tokens == null) return;
+        if (tokens == null)
+            return;
         Set<String> frozen = Set.copyOf(permissions);
         tokens.forEach(token -> sessions.computeIfPresent(token,
                 (t, s) -> new Session(username, s.createdAt(), userId, role, frozen, enabled)));
@@ -124,5 +121,6 @@ public class SessionManager {
     }
 
     public record Session(String username, long createdAt, int userId, String role, Set<String> permissions,
-            boolean enabled) {}
+            boolean enabled) {
+    }
 }

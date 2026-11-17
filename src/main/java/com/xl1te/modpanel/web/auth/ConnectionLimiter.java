@@ -30,7 +30,8 @@ public class ConnectionLimiter {
     }
 
     public void checkConnection(String clientIP) {
-        if (!enabled) return;
+        if (!enabled)
+            return;
         long now = System.currentTimeMillis();
         State s = states.computeIfAbsent(clientIP, k -> new State());
         synchronized (s) {
@@ -42,7 +43,6 @@ public class ConnectionLimiter {
                 throw new IPBanException("Too many requests; retry after " + remaining + " seconds.", false);
             }
             if (s.bannedUntil != 0) {
-                // Ban expiré : nouvelle fenêtre, on garde le compteur de bans.
                 s.bannedUntil = 0;
                 s.count = 0;
                 s.windowStart = now;
@@ -65,7 +65,8 @@ public class ConnectionLimiter {
                         false);
             }
         }
-        if (states.size() > MAX_ENTRIES) purge(now);
+        if (states.size() > MAX_ENTRIES)
+            purge(now);
     }
 
     private void purge(long now) {

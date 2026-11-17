@@ -75,11 +75,10 @@ public class Main extends JavaPlugin {
             var perms = databaseManager.getPermissionRepository();
             if (repo.findByUsername("admin").isEmpty()) {
                 var admin = new com.xl1te.modpanel.database.models.User(
-                    0, "admin",
-                    com.xl1te.modpanel.web.auth.PasswordHasher.hash("admin123"),
-                    "admin", true,
-                    java.time.LocalDateTime.now(), null
-                );
+                        0, "admin",
+                        com.xl1te.modpanel.web.auth.PasswordHasher.hash("admin123"),
+                        "admin", true,
+                        java.time.LocalDateTime.now(), null);
                 int adminId = repo.create(admin);
                 perms.grant(adminId, "modpanel.stats");
                 perms.grant(adminId, "modpanel.players");
@@ -88,9 +87,9 @@ public class Main extends JavaPlugin {
                 perms.grant(adminId, "modpanel.users.manage");
                 perms.grant(adminId, "modpanel.whitelist");
                 repo.setPasswordChangeRequired(adminId);
-                bestLogger.info("Default admin user created (admin / admin123) - password change required at first login!");
+                bestLogger.info(
+                        "Default admin user created (admin / admin123) - password change required at first login!");
             } else {
-                // Install existante : forcer le changement si le mot de passe public par défaut est toujours en place.
                 var admin = repo.findByUsername("admin");
                 if (admin.isPresent()
                         && com.xl1te.modpanel.web.auth.PasswordHasher.verify("admin123",
