@@ -84,12 +84,8 @@ public class WebServer {
                 });
 
                 routes.get("/", ctx -> ctx.redirect("/index"));
-                routes.get("/dashboard", htmlController::serveDashboard);
-                routes.get("/players", htmlController::serveDashboard);
-                routes.get("/users", htmlController::serveDashboard);
-                routes.get("/whitelist", htmlController::serveDashboard);
-                routes.before("/players/{name}", whitelist);
-                routes.get("/players/{name}", htmlController::serveDashboard);
+                // /dashboard, /players, /users et /whitelist sont servis par /{page} :
+                // un fichier public/html/<page>.html par page.
                 routes.get("/favicon.ico", ctx -> {
                     java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("public/img/favicon.ico");
                     if (is != null) {
@@ -100,6 +96,8 @@ public class WebServer {
                 });
 
                 routes.get("/{page}", htmlController::serveHtml);
+                routes.before("/players/{name}", whitelist);
+                routes.get("/players/{name}", htmlController::servePlayer);
 
                 routes.get("/items/{name}", ctx -> {
                     String name = ctx.pathParam("name");

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ModPanel - IP Whitelist</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="../css/app.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha384-nRgPTkuX86pH8yjPJUAFuASXQSSl2/bBUiNV47vSYpKFxHJhbcrGnmlYpYJMeD7a" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  </head>
+  <body class="min-h-screen">
+    <div class="sticky top-0 z-50 flex h-[52px] items-center justify-between bg-accent px-4">
+      <div class="flex items-center gap-2.5">
+        <img class="size-6 rounded-md object-cover" src="/img/modpanel_500px.png" alt="ModPanel" />
+        <div class="text-[15px] font-semibold text-white">ModPanel</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-[13px] text-white/80" id="usernameDisplay"></span>
+        <button class="inline-flex items-center gap-2 rounded border border-white/45 px-2.5 py-1 text-[12px] font-semibold text-white transition hover:border-white hover:bg-white/15" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+
+    <div class="flex min-h-[calc(100vh-52px)] max-[860px]:flex-col">
+      <nav class="sticky top-[52px] flex h-[calc(100vh-52px)] w-56 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[#343a42] bg-[#23272d] p-2 max-[860px]:h-auto max-[860px]:w-full max-[860px]:flex-row max-[860px]:overflow-x-auto max-[860px]:border-b max-[860px]:border-r-0 max-[860px]:py-1.5">
+        <div class="px-3 pb-1.5 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted max-[860px]:hidden">Monitoring</div>
+        <a class="flex cursor-pointer items-center gap-3 border-l-[3px] border-l-transparent px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" href="/dashboard">
+          <i class="fas fa-chart-simple w-[18px] text-center"></i> Dashboard
+        </a>
+        <a class="flex cursor-pointer items-center gap-3 border-l-[3px] border-l-transparent px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" href="/players">
+          <i class="fas fa-users w-[18px] text-center"></i> Players
+        </a>
+        <div class="px-3 pb-1.5 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted max-[860px]:hidden">Administration</div>
+        <a class="flex cursor-pointer items-center gap-3 border-l-[3px] border-l-transparent px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" href="/users">
+          <i class="fas fa-user-shield w-[18px] text-center"></i> Users
+        </a>
+        <a class="flex cursor-pointer items-center gap-3 border-l-[3px] border-l-[#2f9fe0] bg-panel px-3 py-[9px] text-[13.5px] font-semibold text-white transition max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-b-[#2f9fe0] max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" href="/whitelist">
+          <i class="fas fa-shield-halved w-[18px] text-center text-[#7fc4e8]"></i> IP Whitelist
+        </a>
+      </nav>
+
+      <main class="min-w-0 flex-1 px-7 pb-12 pt-6 max-[860px]:px-4 max-[860px]:py-4">
+        <div class="mb-5 flex items-center gap-2 text-[19px] font-semibold"><i class="fas fa-shield-halved"></i>IP Whitelist</div>
+        <div id="whitelist-table"></div>
+      </main>
+    </div>
+
+    <script type="module" src="../js/router.js"></script>
+  </body>
+</html>

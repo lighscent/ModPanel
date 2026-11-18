@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ModPanel</title>
     <link rel="stylesheet" href="../css/app.css" />
-    <script>if(!localStorage.getItem('token')){window.location.href='/login';}else{window.location.href='/dashboard';}</script>
+    <script>
+      fetch('/api/auth/session')
+        .then((r) => { window.location.href = r.ok ? '/dashboard' : '/login'; })
+        .catch(() => { window.location.href = '/login'; });
+    </script>
   </head>
   <body class="flex min-h-screen flex-col items-center justify-center gap-4">
     <div class="size-7 animate-spin rounded-full border-[3px] border-line border-t-accent"></div>

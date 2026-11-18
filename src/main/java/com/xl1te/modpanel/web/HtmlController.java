@@ -17,8 +17,8 @@ public class HtmlController {
         serveFile(ctx, page.endsWith(".html") ? page : page + ".html");
     }
 
-    public void serveDashboard(Context ctx) {
-        serveFile(ctx, "dashboard.html");
+    public void servePlayer(Context ctx) {
+        serveFile(ctx, "player.html");
     }
 
     private void serveFile(Context ctx, String fileName) {
