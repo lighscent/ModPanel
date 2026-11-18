@@ -63,6 +63,9 @@ public class WebServer {
                     staticFileConfig.location = Location.CLASSPATH;
                 });
                 config.http.defaultContentType = "application/json";
+                // Le startup-watcher de Javalin démarre un Thread sans nom que app.stop()
+                // n'arrête pas : fuite de classloader au unload/reload. Inutile ici.
+                config.startup.startupWatcherEnabled = false;
 
                 RoutesConfig routes = config.routes;
                 routes.before(ctx -> {
