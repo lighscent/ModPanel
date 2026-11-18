@@ -5,512 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ModPanel - Dashboard</title>
     <link rel="icon" href="/favicon.ico" />
-    <link rel="stylesheet" href="../css/colors.css" />
-    <link rel="stylesheet" href="../css/index.css" />
+    <link rel="stylesheet" href="../css/app.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha384-nRgPTkuX86pH8yjPJUAFuASXQSSl2/bBUiNV47vSYpKFxHJhbcrGnmlYpYJMeD7a" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body {
-        height: 100%;
-        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-        font-size: 15px;
-        background: var(--bg);
-        color: var(--text);
-        -webkit-font-smoothing: antialiased;
-      }
-      ::-webkit-scrollbar { width: 10px; height: 10px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #4a525d; border: 3px solid var(--bg); border-radius: 6px; }
-      ::-webkit-scrollbar-thumb:hover { background: #5b6572; }
-
-      .topbar {
-        height: 52px;
-        background: var(--accent);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 1.1rem;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-      }
-      .topbar-left { display: flex; align-items: center; gap: 0.55rem; }
-      .topbar-logo {
-        width: 24px; height: 24px;
-        border-radius: 6px;
-        object-fit: cover;
-      }
-      .topbar-title { color: #ffffff; font-size: 1rem; font-weight: 600; letter-spacing: 0.01em; }
-      .topbar-right { display: flex; align-items: center; gap: 0.7rem; }
-      .topbar-user { color: rgba(255, 255, 255, 0.82); font-size: 0.85rem; }
-      .btn-logout {
-        background: transparent; border: 1px solid rgba(255, 255, 255, 0.45);
-        color: #ffffff; padding: 0.3rem 0.7rem;
-        border-radius: 4px; cursor: pointer; font: inherit; font-size: 0.8rem; font-weight: 600;
-        transition: background 0.12s, border-color 0.12s;
-      }
-      .btn-logout:hover { background: rgba(255, 255, 255, 0.16); border-color: #ffffff; }
-
-      .layout { display: flex; min-height: calc(100vh - 52px); }
-      .sidebar {
-        width: 224px;
-        flex: 0 0 224px;
-        background: #23272d;
-        border-right: 1px solid #343a42;
-        padding: 0.55rem 0.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        position: sticky;
-        top: 52px;
-        align-self: flex-start;
-        height: calc(100vh - 52px);
-        overflow-y: auto;
-      }
-      .sidebar-section {
-        padding: 0.35rem 0.75rem 0.3rem;
-        color: var(--text-muted);
-        font-size: 0.68rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.09em;
-      }
-      .sidebar-section + .sidebar-section,
-      .sidebar-item + .sidebar-section {
-        margin-top: 0.5rem;
-        border-top: 1px solid #343a42;
-        padding-top: 0.7rem;
-      }
-      .sidebar-item {
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        padding: 0.58rem 0.75rem;
-        border-left: 3px solid transparent;
-        border-radius: 0 4px 4px 0;
-        color: var(--text-dim);
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: background 0.12s, color 0.12s, border-color 0.12s;
-      }
-      .sidebar-item:hover { background: #2b3038; color: var(--text); }
-      .sidebar-item.active {
-        background: rgba(47, 159, 224, 0.13);
-        border-left-color: #2f9fe0;
-        color: #ffffff;
-        font-weight: 600;
-      }
-      .sidebar-item.active .sidebar-icon { color: #7fc4e8; }
-      .sidebar-icon { width: 18px; text-align: center; font-size: 0.95rem; }
-
-      .main-content {
-        flex: 1;
-        min-width: 0;
-        background: var(--bg);
-        padding: 1.5rem 1.75rem 3rem;
-        overflow-y: auto;
-      }
-      .page-header {
-        font-size: 1.3rem;
-        font-weight: 600;
-        letter-spacing: 0;
-        margin-bottom: 1.1rem;
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .page-header i { font-size: 0.9em; color: var(--text-muted); }
-      .topbar-logo i { font-size: 1.05rem; }
-      .stat-label i { margin-right: 0.3rem; }
-      .section-title i { margin-right: 0.35rem; color: var(--text-muted); font-size: 0.9em; }
-      .btn i, .btn-logout i, .back-btn i { font-size: 0.85em; }
-      .empty-state i { display: block; font-size: 1.15rem; margin-bottom: 0.35rem; opacity: 0.5; }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        gap: 0.85rem;
-        margin-bottom: 1.4rem;
-      }
-      .stat-card {
-        position: relative;
-        overflow: hidden;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 0.95rem 1.05rem 1rem;
-        color: #ffffff;
-      }
-      .stat-card.stat-teal { background: linear-gradient(135deg, #1c8296, #12606f); border-color: #1c8296; }
-      .stat-card.stat-green { background: linear-gradient(135deg, #218a49, #16602f); border-color: #218a49; }
-      .stat-card.stat-amber { background: linear-gradient(135deg, #bd7c1f, #8c5a12); border-color: #bd7c1f; }
-      .stat-card.stat-red { background: linear-gradient(135deg, #b8433e, #8c2f2b); border-color: #b8433e; }
-      .stat-card.stat-blue { background: linear-gradient(135deg, #1a6fa8, #14517c); border-color: #1a6fa8; }
-      .stat-ghost {
-        position: absolute;
-        right: 0.7rem;
-        bottom: 0.5rem;
-        font-size: 2.9rem;
-        color: rgba(255, 255, 255, 0.14);
-        pointer-events: none;
-      }
-      .stat-label {
-        color: rgba(255, 255, 255, 0.94);
-        font-size: 0.95rem;
-        font-weight: 500;
-        letter-spacing: 0;
-        text-transform: none;
-        margin-bottom: 0.25rem;
-      }
-      .stat-card[class="stat-card"] .stat-label { color: var(--text-secondary); }
-      .stat-value {
-        position: relative;
-        font-size: 2.05rem;
-        font-weight: 700;
-        color: #ffffff;
-        line-height: 1.15;
-        letter-spacing: -0.01em;
-        font-variant-numeric: tabular-nums;
-      }
-      .stat-value.warning { color: var(--warn); }
-      .stat-value.danger { color: var(--danger); }
-      .stat-text {
-        font-size: 1.15rem;
-        font-weight: 600;
-        line-height: 1.35;
-        overflow-wrap: anywhere;
-        padding-right: 2.2rem;
-      }
-      .stat-sub {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        color: rgba(255, 255, 255, 0.86);
-        font-size: 0.84rem;
-        margin-top: 0.55rem;
-      }
-
-      .section-title {
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 1.4rem 0 0.6rem;
-        color: var(--text);
-      }
-
-      .table-wrap {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-      }
-      .table-wrap table { width: 100%; border-collapse: collapse; }
-      .table-wrap th {
-        text-align: left;
-        padding: 0.58rem 0.9rem;
-        background: var(--bg-elevated);
-        color: var(--text-secondary);
-        font-size: 0.73rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        font-weight: 600;
-        border-bottom: 1px solid var(--border);
-      }
-      .table-wrap td {
-        padding: 0.55rem 0.9rem;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.87rem;
-      }
-      .table-wrap tr:last-child td { border-bottom: none; }
-      .table-wrap tbody tr:hover { background: #333a44; }
-      .table-wrap tr.clickable { cursor: pointer; }
-      .table-wrap tr.clickable:hover { background: #36414c; }
-
-      .ping-badge {
-        display: inline-block;
-        padding: 0.05rem 0.4rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-      }
-      .ping-good { background: rgba(76, 175, 106, 0.18); color: #7fd694; }
-      .ping-warn { background: rgba(224, 160, 58, 0.18); color: #f0bf6e; }
-      .ping-bad { background: rgba(217, 83, 79, 0.2); color: #f19b98; }
-
-      .btn {
-        padding: 0.45rem 0.85rem;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        font: inherit;
-        font-size: 0.82rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.12s, border-color 0.12s, color 0.12s;
-      }
-      .btn-primary { background: var(--accent); color: #ffffff; }
-      .btn-primary:hover { background: var(--accent-dim); }
-      .btn-sm { padding: 0.25rem 0.55rem; font-size: 0.71rem; }
-
-      /* Users */
-      .users-grid { display: grid; gap: 0.45rem; }
-      .user-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 0.75rem 0.9rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        transition: border-color 0.12s;
-      }
-      .user-card:hover { border-color: var(--border-light); }
-      .user-info { display: flex; flex-direction: column; gap: 0.1rem; }
-      .user-name { font-weight: 600; font-size: 0.9rem; }
-      .user-meta { color: var(--text-dim); font-size: 0.78rem; }
-      .user-badges { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-      .badge {
-        padding: 0.05rem 0.4rem;
-        border-radius: 4px;
-        font-size: 0.64rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-      .badge-admin { background: rgba(217, 83, 79, 0.18); color: #f19b98; }
-      .badge-mod { background: rgba(76, 175, 106, 0.16); color: #7fd694; }
-      .badge-disabled { background: rgba(174, 182, 194, 0.14); color: var(--text-dim); }
-
-      .refresh-info { color: var(--text-muted); font-size: 0.75rem; margin-top: 0.8rem; text-align: right; }
-
-      /* Modal overlay */
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(10, 13, 17, 0.66);
-        z-index: 200;
-        align-items: center;
-        justify-content: center;
-      }
-      .modal-overlay.active { display: flex; }
-      .modal-box {
-        background: var(--surface);
-        border: 1px solid var(--border-light);
-        border-radius: 6px;
-        padding: 1.4rem;
-        width: 90%;
-        max-width: 460px;
-        max-height: 85vh;
-        overflow-y: auto;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-      }
-      .modal-box h3 { margin: 0 0 0.85rem; color: var(--text); font-size: 0.95rem; font-weight: 600; }
-      .modal-actions { display: flex; gap: 0.55rem; justify-content: flex-end; margin-top: 1rem; }
-
-      /* Player detail */
-      .player-detail-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.1rem 1.5rem;
-        margin-bottom: 1rem;
-      }
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.35rem 0;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.87rem;
-      }
-      .detail-label { color: var(--text-dim); }
-      .detail-value { color: var(--text); font-weight: 500; text-align: right; }
-
-      .inv-grid {
-        display: grid;
-        grid-template-columns: repeat(9, 1fr);
-        gap: 3px;
-        margin-bottom: 4px;
-      }
-      .inv-slot {
-        aspect-ratio: 1;
-        background: #333a44;
-        border: 1px solid #454d58;
-        border-radius: 3px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        min-height: 40px;
-        max-width: 44px;
-      }
-      .inv-slot img {
-        width: 26px;
-        height: 26px;
-        image-rendering: pixelated;
-      }
-      .inv-slot .item-count {
-        position: absolute;
-        bottom: 0;
-        right: 2px;
-        font-size: 0.62rem;
-        font-weight: 700;
-        color: #ffffff;
-        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.85);
-      }
-      .inv-slot .fa-fallback { font-size: 0.9rem; color: var(--text-muted); }
-      .inv-row-label {
-        font-size: 0.59rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        margin: 0.5rem 0 0.25rem;
-      }
-      .armor-slots {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 0.5rem;
-      }
-      .armor-slots .inv-slot { width: 40px; height: 40px; }
-
-      .sub-section {
-        font-size: 0.74rem;
-        font-weight: 600;
-        color: var(--text-dim);
-        margin: 0.9rem 0 0.4rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-
-      .effect-chip {
-        display: inline-block;
-        padding: 0.1rem 0.45rem;
-        background: rgba(58, 166, 216, 0.14);
-        border: 1px solid rgba(58, 166, 216, 0.3);
-        border-radius: 4px;
-        font-size: 0.7rem;
-        color: #86cdec;
-        margin: 0.15rem 0.2rem 0 0;
-      }
-
-      .empty-state {
-        color: var(--text-dim);
-        font-size: 0.86rem;
-        padding: 1.4rem 1rem;
-        text-align: center;
-        border: 1px dashed var(--border-light);
-        border-radius: var(--radius);
-        background: rgba(255, 255, 255, 0.02);
-      }
-
-      .back-btn {
-        background: transparent;
-        border: 1px solid var(--border-light);
-        color: var(--text-dim);
-        padding: 0.3rem 0.65rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font: inherit;
-        font-size: 0.8rem;
-        font-weight: 600;
-        transition: border-color 0.12s, color 0.12s;
-        margin-bottom: 0.9rem;
-      }
-      .back-btn:hover { border-color: var(--accent); color: #ffffff; }
-
-      .form-group { margin-bottom: 0.7rem; }
-      .form-group label {
-        display: block;
-        color: var(--text-dim);
-        font-size: 0.78rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-      }
-      .form-group input, .form-group select {
-        width: 100%;
-        padding: 0.45rem 0.65rem;
-        background: #23272d;
-        border: 1px solid var(--border-light);
-        border-radius: 4px;
-        color: var(--text);
-        font: inherit;
-        font-size: 0.86rem;
-        box-sizing: border-box;
-      }
-      .form-group input:focus, .form-group select:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-glow);
-      }
-
-      .coords {
-        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-        color: #7fc4e8;
-        font-size: 0.8rem;
-      }
-
-      @media (max-width: 860px) {
-        .layout { flex-direction: column; }
-        .sidebar {
-          width: 100%;
-          flex: 0 0 auto;
-          height: auto;
-          position: sticky;
-          top: 52px;
-          z-index: 90;
-          flex-direction: row;
-          border-right: 0;
-          border-bottom: 1px solid #343a42;
-          padding: 0.35rem 0.45rem;
-          gap: 0.2rem;
-          overflow-x: auto;
-        }
-        .sidebar-section { display: none; }
-        .sidebar-item { white-space: nowrap; padding: 0.4rem 0.6rem; border-left: 0; border-radius: 0; border-bottom: 2px solid transparent; }
-        .sidebar-item.active { border-bottom-color: #2f9fe0; border-left: 0; }
-        .sidebar-icon { width: auto; }
-        .main-content { padding: 1rem 1rem 2.5rem; }
-        .stats-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-        .player-detail-grid { grid-template-columns: 1fr; }
-        .table-wrap { overflow-x: auto; }
-        .table-wrap table { min-width: 520px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="topbar">
-      <div class="topbar-left">
-        <img class="topbar-logo" src="/img/modpanel_500px.png" alt="ModPanel" />
-        <div class="topbar-title">ModPanel</div>
+      </head>
+  <body class="min-h-screen">
+    <div class="sticky top-0 z-50 flex h-[52px] items-center justify-between bg-accent px-4">
+      <div class="flex items-center gap-2.5">
+        <img class="size-6" src="/img/modpanel_500px.png" alt="ModPanel" />
+        <div class="text-[15px] font-semibold text-white">ModPanel</div>
       </div>
-      <div class="topbar-right">
-        <span class="topbar-user" id="usernameDisplay"></span>
-        <button class="btn-logout" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
+      <div class="flex items-center gap-3">
+        <span class="text-[13px] text-white/80" id="usernameDisplay"></span>
+        <button class="inline-flex items-center gap-2 rounded border border-white/45 px-2.5 py-1 text-[12px] font-semibold text-white transition hover:border-white hover:bg-white/15" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
       </div>
     </div>
 
-    <div class="layout">
-      <div class="sidebar">
-        <div class="sidebar-section">Monitoring</div>
-        <div class="sidebar-item active" data-page="dashboard">
-          <i class="fas fa-chart-simple sidebar-icon"></i> Dashboard
+    <div class="flex min-h-[calc(100vh-52px)] max-[860px]:flex-col">
+      <nav class="sticky top-[52px] flex h-[calc(100vh-52px)] w-56 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[#343a42] bg-[#23272d] p-2 max-[860px]:h-auto max-[860px]:w-full max-[860px]:flex-row max-[860px]:overflow-x-auto max-[860px]:border-b max-[860px]:border-r-0 max-[860px]:py-1.5">
+        <div class="px-3 pb-1.5 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted max-[860px]:hidden">Monitoring</div>
+        <div class="sidebar-item flex cursor-pointer items-center gap-3 border-l-[3px] px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5 border-l-[#2f9fe0] bg-panel font-semibold text-white max-[860px]:border-b-[#2f9fe0]" data-page="dashboard">
+          <i class="fas fa-chart-simple w-[18px] text-center text-[#7fc4e8]"></i> Dashboard
         </div>
-        <div class="sidebar-item" data-page="players">
-          <i class="fas fa-users sidebar-icon"></i> Players
+        <div class="sidebar-item flex cursor-pointer items-center gap-3 border-l-[3px] border-transparent px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" data-page="players">
+          <i class="fas fa-users w-[18px] text-center"></i> Players
         </div>
-        <div class="sidebar-section">Administration</div>
-        <div class="sidebar-item" data-page="users">
-          <i class="fas fa-user-shield sidebar-icon"></i> Users
+        <div class="px-3 pb-1.5 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted max-[860px]:hidden">Administration</div>
+        <div class="sidebar-item flex cursor-pointer items-center gap-3 border-l-[3px] border-transparent px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" data-page="users">
+          <i class="fas fa-user-shield w-[18px] text-center"></i> Users
         </div>
-        <div class="sidebar-item" data-page="whitelist">
-          <i class="fas fa-shield-halved sidebar-icon"></i> IP Whitelist
+        <div class="sidebar-item flex cursor-pointer items-center gap-3 border-l-[3px] border-transparent px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5" data-page="whitelist">
+          <i class="fas fa-shield-halved w-[18px] text-center"></i> IP Whitelist
         </div>
-      </div>
+      </nav>
 
-      <div class="main-content" id="mainContent">
+      <div class="min-w-0 flex-1 px-7 pb-12 pt-6 max-[860px]:px-4 max-[860px]:py-4" id="mainContent">
         <div id="page-dashboard"></div>
         <div id="page-players" style="display:none;"></div>
         <div id="page-users" style="display:none;"></div>
@@ -519,27 +47,27 @@
       </div>
     </div>
 
-    <div class="modal-overlay" id="createUserModal">
-      <div class="modal-box">
-        <h3><i class="fas fa-user-plus"></i> Create User</h3>
-        <div class="form-group">
-          <label>Username</label>
-          <input id="newUsername" />
+    <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60" id="createUserModal">
+      <div class="max-h-[85vh] w-[90%] max-w-[460px] overflow-y-auto rounded-md border border-[#4a525d] bg-panel p-6 shadow-2xl">
+        <h3 class="mb-3.5 text-[15px] font-semibold"><i class="fas fa-user-plus"></i> Create User</h3>
+        <div class="mb-3">
+          <label class="mb-1 block text-[12px] font-semibold text-dim">Username</label>
+          <input id="newUsername" class="w-full rounded border border-[#4a525d] bg-[#23272d] px-2.5 py-1.5 text-[13px] text-ink outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/20" />
         </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="newPassword" />
+        <div class="mb-3">
+          <label class="mb-1 block text-[12px] font-semibold text-dim">Password</label>
+          <input type="password" id="newPassword" class="w-full rounded border border-[#4a525d] bg-[#23272d] px-2.5 py-1.5 text-[13px] text-ink outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/20" />
         </div>
-        <div class="form-group">
-          <label>Role</label>
-          <select id="newRole">
+        <div class="mb-3">
+          <label class="mb-1 block text-[12px] font-semibold text-dim">Role</label>
+          <select id="newRole" class="w-full rounded border border-[#4a525d] bg-[#23272d] px-2.5 py-1.5 text-[13px] text-ink outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/20">
             <option value="moderator">Moderator</option>
             <option value="admin">Admin</option>
           </select>
         </div>
-        <div class="modal-actions">
-          <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text-dim)" onclick="document.getElementById('createUserModal').classList.remove('active')"><i class="fas fa-xmark"></i> Cancel</button>
-          <button class="btn btn-primary" onclick="createUser()"><i class="fas fa-check"></i> Create</button>
+        <div class="mt-4 flex justify-end gap-2">
+          <button class="inline-flex items-center gap-2 rounded border border-line px-3.5 py-1.5 text-[12.5px] font-semibold text-dim transition hover:text-ink" onclick="closeCreateUser()"><i class="fas fa-xmark"></i> Cancel</button>
+          <button class="inline-flex items-center gap-2 rounded bg-accent px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition hover:bg-accent-dark" onclick="createUser()"><i class="fas fa-check"></i> Create</button>
         </div>
       </div>
     </div>
@@ -565,6 +93,69 @@
       async function logout() {
         try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
         window.location.href = '/login';
+      }
+
+      const NAV_BASE = 'sidebar-item flex cursor-pointer items-center gap-3 border-l-[3px] px-3 py-[9px] text-[13.5px] text-dim transition hover:bg-panel hover:text-ink max-[860px]:whitespace-nowrap max-[860px]:border-b-2 max-[860px]:border-l-0 max-[860px]:px-2.5 max-[860px]:py-1.5';
+      const NAV_IDLE = 'border-l-transparent';
+      const NAV_ACTIVE = 'border-l-[#2f9fe0] bg-panel font-semibold text-white max-[860px]:border-b-[#2f9fe0]';
+
+      const ui = {
+        page: 'mb-5 flex items-center gap-2 text-[19px] font-semibold',
+        sectionTitle: 'mb-2.5 mt-6 flex items-center gap-2 text-[15px] font-semibold',
+        statsGrid: 'mb-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-3.5 max-[860px]:grid-cols-[repeat(auto-fit,minmax(150px,1fr))]',
+        statCard: 'relative min-h-[96px] overflow-hidden rounded-md px-4 py-3.5 text-white',
+        statLabel: 'mb-1 flex items-center gap-1.5 text-[13px] text-white/90',
+        statValue: 'stat-value text-[27px] font-bold leading-tight tracking-tight tabular-nums',
+        statText: 'stat-value pr-9 text-[17px] font-semibold leading-snug [overflow-wrap:anywhere]',
+        statSub: 'mt-2 flex items-center gap-1.5 text-[12.5px] text-white/85',
+        ghost: 'pointer-events-none absolute bottom-2 right-2.5 text-[46px] text-white/15',
+        teal: 'bg-[linear-gradient(135deg,#1c8296,#12606f)]',
+        green: 'bg-[linear-gradient(135deg,#218a49,#16602f)]',
+        amber: 'bg-[linear-gradient(135deg,#bd7c1f,#8c5a12)]',
+        red: 'bg-[linear-gradient(135deg,#b8433e,#8c2f2b)]',
+        blue: 'bg-[linear-gradient(135deg,#1a6fa8,#14517c)]',
+        tableWrap: 'overflow-hidden rounded-md border border-line bg-panel max-[860px]:overflow-x-auto',
+        table: 'w-full border-collapse max-[860px]:min-w-[520px]',
+        th: 'border-b border-line bg-raised px-3.5 py-2 text-left text-[10.5px] font-semibold uppercase tracking-wider text-dim',
+        td: 'border-b border-line px-3.5 py-2 text-[13px]',
+        row: 'hover:bg-raised/60',
+        rowLink: 'cursor-pointer hover:bg-[#36414c]',
+        ping: 'inline-block rounded px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums',
+        pingGood: 'bg-emerald-500/15 text-emerald-300',
+        pingWarn: 'bg-amber-500/15 text-amber-300',
+        pingBad: 'bg-red-500/15 text-red-300',
+        empty: 'rounded-md border border-dashed border-[#4a525d] bg-white/[0.02] p-6 text-center text-[13px] text-dim',
+        btn: 'inline-flex items-center gap-2 rounded px-3.5 py-1.5 text-[12.5px] font-semibold transition',
+        btnPrimary: 'bg-accent text-white hover:bg-accent-dark',
+        back: 'mb-3 inline-flex items-center gap-2 rounded border border-[#4a525d] px-2.5 py-1 text-[12px] font-semibold text-dim transition hover:border-accent hover:text-white',
+        refresh: 'mt-3 text-right text-[11.5px] text-muted',
+        userCard: 'flex items-center justify-between gap-4 rounded-md border border-line bg-panel px-3.5 py-3 hover:border-[#4a525d]',
+        badge: 'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+        badgeAdmin: 'bg-red-500/15 text-red-300',
+        badgeMod: 'bg-emerald-500/15 text-emerald-300',
+        badgeOff: 'bg-white/10 text-dim',
+        card: 'rounded-md border border-line bg-panel',
+        detailGrid: 'grid grid-cols-2 gap-x-6 max-[860px]:grid-cols-1',
+        detailRow: 'flex justify-between gap-4 border-b border-line py-1.5 text-[13px]',
+        detailLabel: 'text-dim',
+        detailValue: 'text-right font-medium',
+        subSection: 'mb-1.5 mt-3.5 text-[11px] font-semibold uppercase tracking-wider text-dim',
+        invGrid: 'mb-1 grid grid-cols-9 gap-[3px]',
+        invSlot: 'relative flex aspect-square min-h-[40px] max-w-[44px] items-center justify-center rounded-[3px] border border-[#454d58] bg-raised',
+        invImg: 'size-[26px] [image-rendering:pixelated]',
+        itemCount: 'absolute bottom-0 right-0.5 text-[10px] font-bold text-white [text-shadow:1px_1px_1px_rgba(0,0,0,.85)]',
+        invLabel: 'mb-1 mt-2 text-[9.5px] uppercase tracking-wider text-muted',
+        effect: 'mr-1 mt-1 inline-block rounded border border-sky-400/30 bg-sky-400/15 px-1.5 py-0.5 text-[10.5px] text-sky-300',
+        muted: 'text-[12px] text-dim'
+      };
+
+      function setActiveNav(page) {
+        document.querySelectorAll('.sidebar-item').forEach(el => {
+          const on = el.dataset.page === page;
+          el.className = NAV_BASE + ' ' + (on ? NAV_ACTIVE : NAV_IDLE);
+          const icon = el.querySelector('i');
+          if (icon) icon.classList.toggle('text-[#7fc4e8]', on);
+        });
       }
 
       let currentPage = 'dashboard';
@@ -602,7 +193,7 @@
         currentPage = page;
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         document.getElementById('page-' + page).style.display = 'block';
-        document.querySelectorAll('.sidebar-item').forEach(x => x.classList.toggle('active', x.dataset.page === page));
+        setActiveNav(page);
       }
 
       function showPlayerDetailPage(uuid, name) {
@@ -610,7 +201,7 @@
         if (location.pathname !== path) history.pushState({}, '', path);
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         document.getElementById('page-player-detail').style.display = 'block';
-        document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
+        setActiveNav(null);
         loadPlayerDetail(uuid, name);
       }
 
@@ -618,8 +209,8 @@
         const container = document.getElementById('page-player-detail');
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         container.style.display = 'block';
-        document.querySelectorAll('.sidebar-item').forEach(x => x.classList.remove('active'));
-        container.innerHTML = '<div class="page-header"><i class="fas fa-spinner fa-spin"></i>Loading...</div>';
+        setActiveNav(null);
+        container.innerHTML = `<div class="${ui.page}"><i class="fas fa-spinner fa-spin"></i>Loading...</div>`;
 
         try {
           const res = await apiFetch('/api/players');
@@ -629,18 +220,18 @@
             : null;
           if (!player) {
             container.innerHTML = `
-              <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
-              <div class="page-header"><i class="fas fa-triangle-exclamation"></i>Player not found</div>
-              <div class="empty-state">No online player named ${escapeHtml(name)}.</div>
+              <button class="${ui.back}" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+              <div class="${ui.page}"><i class="fas fa-triangle-exclamation"></i>Player not found</div>
+              <div class="${ui.empty}">No online player named ${escapeHtml(name)}.</div>
             `;
             return;
           }
           loadPlayerDetail(player.uuid, player.name);
         } catch (e) {
           container.innerHTML = `
-            <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
-            <div class="page-header"><i class="fas fa-triangle-exclamation"></i>Error</div>
-            <div class="empty-state">Failed to load player: ${escapeHtml(e.message)}</div>
+            <button class="${ui.back}" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+            <div class="${ui.page}"><i class="fas fa-triangle-exclamation"></i>Error</div>
+            <div class="${ui.empty}">Failed to load player: ${escapeHtml(e.message)}</div>
           `;
         }
       }
@@ -664,7 +255,7 @@
           const res = await apiFetch('/api/stats');
           const d = await res.json();
           if (!d || typeof d.playerCount === 'undefined') {
-            document.getElementById('page-dashboard').innerHTML = '<div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div><div class="stat-card" style="color:var(--danger)">Failed to load stats</div>';
+            document.getElementById('page-dashboard').innerHTML = `<div class="${ui.page}"><i class="fas fa-gauge"></i>Dashboard</div><div class="${ui.card} p-4 text-red-300">Failed to load stats</div>`;
             return;
           }
           const tpsColor = d.tps < 15 ? 'danger' : d.tps < 18 ? 'warning' : '';
@@ -675,30 +266,30 @@
           const implVersion = (mcStart < 0 ? rawVersion : rawVersion.slice(0, mcStart)).trim();
 
           document.getElementById('page-dashboard').innerHTML = `
-            <div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div>
-            <div class="stats-grid">
-              <div class="stat-card stat-teal">
-                <i class="fas fa-user-group stat-ghost"></i>
-                <div class="stat-label"><i class="fas fa-user-group"></i>Players Online</div>
-                <div class="stat-value">${d.playerCount}<span style="font-size:1.1rem;color:rgba(255,255,255,0.7)">/${d.maxPlayers}</span></div>
-                <div class="stat-sub">${d.serverName || 'Minecraft Server'}</div>
+            <div class="${ui.page}"><i class="fas fa-gauge"></i>Dashboard</div>
+            <div class="${ui.statsGrid}">
+              <div class="${ui.statCard} ${ui.teal}">
+                <i class="fas fa-user-group ${ui.ghost}"></i>
+                <div class="${ui.statLabel}"><i class="fas fa-user-group"></i>Players Online</div>
+                <div class="${ui.statValue}">${d.playerCount}<span class="text-[16px] font-medium text-white/70">/${d.maxPlayers}</span></div>
+                <div class="${ui.statSub}">${d.serverName || 'Minecraft Server'}</div>
               </div>
-              <div class="stat-card ${tpsColor === 'danger' ? 'stat-red' : tpsColor === 'warning' ? 'stat-amber' : 'stat-green'}">
-                <i class="fas fa-gauge-high stat-ghost"></i>
-                <div class="stat-label"><i class="fas fa-gauge-high"></i>TPS</div>
-                <div class="stat-value">${d.tps.toFixed(1)}</div>
-                <div class="stat-sub">Target: 20.0</div>
+              <div class="${ui.statCard} ${tpsColor === 'danger' ? ui.red : tpsColor === 'warning' ? ui.amber : ui.green}">
+                <i class="fas fa-gauge-high ${ui.ghost}"></i>
+                <div class="${ui.statLabel}"><i class="fas fa-gauge-high"></i>TPS</div>
+                <div class="${ui.statValue}">${d.tps.toFixed(1)}</div>
+                <div class="${ui.statSub}">Target: 20.0</div>
               </div>
-              <div class="stat-card stat-blue">
-                <i class="fas fa-server stat-ghost"></i>
-                <div class="stat-label"><i class="fas fa-server"></i>Server</div>
-                <div class="stat-value stat-text" title="${escapeHtml(implVersion)}">${escapeHtml((d.serverName || 'Server') + ': ' + (mcVersion || 'N/A'))}</div>
-                <div class="stat-sub">Version</div>
+              <div class="${ui.statCard} ${ui.blue}">
+                <i class="fas fa-server ${ui.ghost}"></i>
+                <div class="${ui.statLabel}"><i class="fas fa-server"></i>Server</div>
+                <div class="${ui.statText}" title="${escapeHtml(implVersion)}">${escapeHtml((d.serverName || 'Server') + ': ' + (mcVersion || 'N/A'))}</div>
+                <div class="${ui.statSub}">Version</div>
               </div>
             </div>
-            <div class="section-title"><i class="fas fa-users"></i>Online Players</div>
+            <div class="${ui.sectionTitle}"><i class="fas fa-users"></i>Online Players</div>
             <div id="dashboard-players-list"></div>
-            <div class="refresh-info" id="refreshInfo"></div>
+            <div class="${ui.refresh}" id="refreshInfo"></div>
           `;
           await loadPlayersList();
           if (statsInterval) clearInterval(statsInterval);
@@ -708,13 +299,13 @@
               const s = await r.json();
               if (s && s.playerCount !== undefined) {
                 const cards = document.querySelectorAll('.stat-value');
-                if (cards[0]) cards[0].innerHTML = s.playerCount + '<span style="font-size:1.1rem;color:rgba(255,255,255,0.7)">/' + s.maxPlayers + '</span>';
+                if (cards[0]) cards[0].innerHTML = s.playerCount + '<span class="text-[16px] font-medium text-white/70">/' + s.maxPlayers + '</span>';
                 if (cards[1]) cards[1].textContent = s.tps.toFixed(1);
               }
             } catch(e) {}
           }, 5000);
         } catch (e) {
-          document.getElementById('page-dashboard').innerHTML = '<div class="page-header"><i class="fas fa-gauge"></i>Dashboard</div><div class="stat-card" style="color:var(--danger)">Failed to load: ' + e.message + '</div>';
+          document.getElementById('page-dashboard').innerHTML = `<div class="${ui.page}"><i class="fas fa-gauge"></i>Dashboard</div><div class="${ui.card} p-4 text-red-300">Failed to load: ${e.message}</div>`;
         }
       }
 
@@ -726,24 +317,24 @@
           const list = document.getElementById('dashboard-players-list');
           if (!list) return;
           if (players.length === 0) {
-            list.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i>No players online</div>';
+            list.innerHTML = `<div class="${ui.empty}"><i class="mb-1.5 block text-[18px] opacity-50"></i>No players online</div>`;
             document.getElementById('refreshInfo').textContent = '';
             return;
           }
-          list.innerHTML = `<div class="table-wrap"><table><thead><tr>
-            <th>Player</th><th>World</th><th>Health</th><th>Ping</th>
+          list.innerHTML = `<div class="${ui.tableWrap}"><table class="${ui.table}"><thead><tr>
+            <th class="${ui.th}">Player</th><th class="${ui.th}">World</th><th class="${ui.th}">Health</th><th class="${ui.th}">Ping</th>
           </tr></thead><tbody>
-            ${players.map(p => `<tr class="clickable" onclick="showPlayerDetailPage('${p.uuid}','${escapeHtml(p.name)}')">
-              <td><span style="color:var(--accent);font-weight:600">${escapeHtml(p.displayName)}</span></td>
-              <td style="color:var(--text-dim)">${p.world}</td>
-              <td>${p.health}/${p.maxHealth}</td>
-              <td><span class="ping-badge ${p.ping > 150 ? 'ping-bad' : p.ping > 80 ? 'ping-warn' : 'ping-good'}">${p.ping}ms</span></td>
+            ${players.map(p => `<tr class="${ui.rowLink}" onclick="showPlayerDetailPage('${p.uuid}','${escapeHtml(p.name)}')">
+              <td class="${ui.td}"><span class="font-semibold text-[#7fc4e8]">${escapeHtml(p.displayName)}</span></td>
+              <td class="${ui.td} text-dim">${p.world}</td>
+              <td class="${ui.td}">${p.health}/${p.maxHealth}</td>
+              <td class="${ui.td}"><span class="${ui.ping} ${p.ping > 150 ? ui.pingBad : p.ping > 80 ? ui.pingWarn : ui.pingGood}">${p.ping}ms</span></td>
             </tr>`).join('')}
           </tbody></table></div>`;
           document.getElementById('refreshInfo').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
         } catch (e) {
           const list = document.getElementById('dashboard-players-list');
-          if (list) list.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Error loading players</div>';
+          if (list) list.innerHTML = `<div class="${ui.empty}">Error loading players</div>`;
         }
       }
 
@@ -754,27 +345,27 @@
           const players = await res.json();
           if (!Array.isArray(players)) throw new Error('Invalid response');
 
-          let html = '<div class="page-header"><i class="fas fa-users"></i>Players</div>';
+          let html = `<div class="${ui.page}"><i class="fas fa-users"></i>Players</div>`;
           if (players.length === 0) {
-            html += '<div class="empty-state"><i class="fas fa-user-slash"></i>No players online</div>';
+            html += `<div class="${ui.empty}">No players online</div>`;
           } else {
-            html += `<div class="table-wrap"><table><thead><tr>
-              <th>Player</th><th>World</th><th>Health</th><th>Ping</th><th>IP</th><th>Coords</th><th>Game Mode</th>
+            html += `<div class="${ui.tableWrap}"><table class="${ui.table}"><thead><tr>
+              <th class="${ui.th}">Player</th><th class="${ui.th}">World</th><th class="${ui.th}">Health</th><th class="${ui.th}">Ping</th><th class="${ui.th}">IP</th><th class="${ui.th}">Coords</th><th class="${ui.th}">Game Mode</th>
             </tr></thead><tbody>
-              ${players.map(p => `<tr class="clickable" onclick="showPlayerDetailPage('${p.uuid}','${escapeHtml(p.name)}')">
-                <td><span style="color:var(--accent);font-weight:600">${escapeHtml(p.displayName)}</span></td>
-                <td style="color:var(--text-dim)">${p.world}</td>
-                <td>${p.health}/${p.maxHealth}</td>
-                <td><span class="ping-badge ${p.ping > 150 ? 'ping-bad' : p.ping > 80 ? 'ping-warn' : 'ping-good'}">${p.ping}ms</span></td>
-                <td style="color:var(--text-dim);font-size:0.75rem;font-family:monospace">${p.ip}</td>
-                <td class="coords">${p.x}, ${p.y}, ${p.z}</td>
-                <td style="color:var(--text-dim)">${p.gamemode}</td>
+              ${players.map(p => `<tr class="${ui.rowLink}" onclick="showPlayerDetailPage('${p.uuid}','${escapeHtml(p.name)}')">
+                <td class="${ui.td}"><span class="font-semibold text-[#7fc4e8]">${escapeHtml(p.displayName)}</span></td>
+                <td class="${ui.td} text-dim">${p.world}</td>
+                <td class="${ui.td}">${p.health}/${p.maxHealth}</td>
+                <td class="${ui.td}"><span class="${ui.ping} ${p.ping > 150 ? ui.pingBad : p.ping > 80 ? ui.pingWarn : ui.pingGood}">${p.ping}ms</span></td>
+                <td class="${ui.td} font-mono text-[11.5px] text-dim">${p.ip}</td>
+                <td class="${ui.td} font-mono text-[12px] text-[#7fc4e8]">${p.x}, ${p.y}, ${p.z}</td>
+                <td class="${ui.td} text-dim">${p.gamemode}</td>
               </tr>`).join('')}
             </tbody></table></div>`;
           }
           document.getElementById('page-players').innerHTML = html;
         } catch (e) {
-          document.getElementById('page-players').innerHTML = '<div class="page-header">Players</div><div class="empty-state">Error loading players</div>';
+          document.getElementById('page-players').innerHTML = `<div class="${ui.page}"><i class="fas fa-users"></i>Players</div><div class="${ui.empty}">Error loading players</div>`;
         }
       }
 
@@ -784,24 +375,24 @@
       async function loadPlayerDetail(uuid, name) {
         currentDetailUuid = uuid;
         const container = document.getElementById('page-player-detail');
-        container.innerHTML = '<div class="page-header"><i class="fas fa-spinner fa-spin"></i>Loading...</div>';
+        container.innerHTML = `<div class="${ui.page}"><i class="fas fa-spinner fa-spin"></i>Loading...</div>`;
 
         try {
           const res = await apiFetch('/api/players/detail?uuid=' + uuid);
           const p = await res.json();
           if (!p || !p.name) throw new Error('Invalid response');
 
-          const pingClass = p.ping > 150 ? 'ping-bad' : p.ping > 80 ? 'ping-warn' : 'ping-good';
+          const pingClass = p.ping > 150 ? ui.pingBad : p.ping > 80 ? ui.pingWarn : ui.pingGood;
 
           function itemSlotImg(type, count) {
             const imgName = type.toLowerCase() + '.png';
             const displayName = type.replace(/_/g, ' ').toLowerCase();
-            const countHtml = count > 1 ? '<span class="item-count">' + count + '</span>' : '';
-            return `<div class="inv-slot"><img src="/items/${imgName}" alt="${displayName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><i class="fas fa-cube fa-fallback" style="display:none"></i>${countHtml}</div>`;
+            const countHtml = count > 1 ? '<span class="' + ui.itemCount + '">' + count + '</span>' : '';
+            return `<div class="${ui.invSlot}"><img class="${ui.invImg}" src="/items/${imgName}" alt="${displayName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><i class="fas fa-cube text-[13px] text-muted" style="display:none"></i>${countHtml}</div>`;
           }
 
           function emptySlot() {
-            return '<div class="inv-slot"></div>';
+            return `<div class="${ui.invSlot}"></div>`;
           }
 
           // Find item at a given slot index
@@ -810,9 +401,9 @@
           }
 
           // Main inventory: slots 9-35 (3 rows of 9)
-          let invHtml = '<div class="sub-section">Inventory</div>';
+          let invHtml = `<div class="${ui.subSection}">Inventory</div>`;
           for (let row = 0; row < 3; row++) {
-            invHtml += '<div class="inv-grid">';
+            invHtml += `<div class="${ui.invGrid}">`;
             for (let col = 0; col < 9; col++) {
               const idx = 9 + row * 9 + col;
               const item = itemAt(idx);
@@ -821,7 +412,7 @@
             invHtml += '</div>';
           }
           // Hotbar: slots 0-8 (1 row of 9)
-          invHtml += '<div class="inv-row-label">Hotbar</div><div class="inv-grid">';
+          invHtml += `<div class="${ui.invLabel}">Hotbar</div><div class="${ui.invGrid}">`;
           for (let i = 0; i < 9; i++) {
             const item = itemAt(i);
             invHtml += item ? itemSlotImg(item.type, item.amount) : emptySlot();
@@ -831,12 +422,12 @@
           function armorSlotImg(type) {
             const imgName = type.toLowerCase() + '.png';
             const displayName = type.replace(/_/g, ' ').toLowerCase();
-            return `<div class="inv-slot"><img src="/items/${imgName}" alt="${displayName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><i class="fas fa-cube fa-fallback" style="display:none"></i></div>`;
+            return `<div class="${ui.invSlot}"><img class="${ui.invImg}" src="/items/${imgName}" alt="${displayName}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><i class="fas fa-cube text-[13px] text-muted" style="display:none"></i></div>`;
           }
 
           let armorHtml = '';
           if (p.armor && p.armor.length > 0) {
-            armorHtml += '<div class="sub-section">Armor</div><div class="armor-slots">';
+            armorHtml += `<div class="${ui.subSection}">Armor</div><div class="mb-2 flex gap-1">`;
             p.armor.forEach(a => {
               armorHtml += armorSlotImg(a.type);
             });
@@ -845,50 +436,50 @@
 
           let offhandHtml = '';
           if (p.offhand) {
-            offhandHtml += '<div class="sub-section">Offhand</div><div class="armor-slots">';
+            offhandHtml += `<div class="${ui.subSection}">Offhand</div><div class="mb-2 flex gap-1">`;
             offhandHtml += armorSlotImg(p.offhand);
             offhandHtml += '</div>';
           }
 
           let effectsHtml = '';
           if (p.potionEffects && p.potionEffects.length > 0) {
-            effectsHtml += '<div class="sub-section">Effects</div>';
+            effectsHtml += `<div class="${ui.subSection}">Effects</div>`;
             p.potionEffects.forEach(e => {
-              effectsHtml += `<span class="effect-chip">${e.type} ${e.amplifier + 1} (${e.duration}s)</span>`;
+              effectsHtml += `<span class="${ui.effect}">${e.type} ${e.amplifier + 1} (${e.duration}s)</span>`;
             });
           }
 
           container.innerHTML = `
-            <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
-            <div class="page-header"><i class="fas fa-user"></i>${escapeHtml(p.displayName)}</div>
-            <div class="stats-grid" style="grid-template-columns:1fr 1fr">
-              <div class="stat-card">
-                <div class="player-detail-grid">
-                  <div class="detail-row"><span class="detail-label">UUID</span><span class="detail-value" style="font-size:0.7rem;font-family:monospace">${p.uuid}</span></div>
-                  <div class="detail-row"><span class="detail-label">IP</span><span class="detail-value" style="font-family:monospace">${p.ip}</span></div>
-                  <div class="detail-row"><span class="detail-label">World</span><span class="detail-value">${p.world}</span></div>
-                  <div class="detail-row"><span class="detail-label">Coords</span><span class="detail-value coords">${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}</span></div>
-                  <div class="detail-row"><span class="detail-label">Health</span><span class="detail-value">${p.health} / ${p.maxHealth}</span></div>
-                  <div class="detail-row"><span class="detail-label">Food</span><span class="detail-value">${p.food} / 20</span></div>
-                  <div class="detail-row"><span class="detail-label">Ping</span><span class="detail-value"><span class="ping-badge ${pingClass}">${p.ping}ms</span></span></div>
-                  <div class="detail-row"><span class="detail-label">Game Mode</span><span class="detail-value">${p.gamemode}</span></div>
-                  <div class="detail-row"><span class="detail-label">Level</span><span class="detail-value">${p.level}</span></div>
-                  <div class="detail-row"><span class="detail-label">Locale</span><span class="detail-value">${p.locale}</span></div>
+            <button class="${ui.back}" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+            <div class="${ui.page}"><i class="fas fa-user"></i>${escapeHtml(p.displayName)}</div>
+            <div class="mb-6 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1">
+              <div class="${ui.card} p-4">
+                <div class="${ui.detailGrid}">
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">UUID</span><span class="${ui.detailValue} font-mono text-[11px]">${p.uuid}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">IP</span><span class="${ui.detailValue} font-mono">${p.ip}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">World</span><span class="${ui.detailValue}">${p.world}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Coords</span><span class="${ui.detailValue} font-mono text-[12px] text-[#7fc4e8]">${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Health</span><span class="${ui.detailValue}">${p.health} / ${p.maxHealth}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Food</span><span class="${ui.detailValue}">${p.food} / 20</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Ping</span><span class="${ui.detailValue}"><span class="${ui.ping} ${pingClass}">${p.ping}ms</span></span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Game Mode</span><span class="${ui.detailValue}">${p.gamemode}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Level</span><span class="${ui.detailValue}">${p.level}</span></div>
+                  <div class="${ui.detailRow}"><span class="${ui.detailLabel}">Locale</span><span class="${ui.detailValue}">${p.locale}</span></div>
                 </div>
               </div>
-              <div class="stat-card">
+              <div class="${ui.card} p-4">
                 ${armorHtml}
                 ${offhandHtml}
-                ${effectsHtml || '<div style="color:var(--text-dim);font-size:0.8rem;margin-top:0.5rem">No active effects</div>'}
+                ${effectsHtml || '<div class="mt-2 text-[12px] text-dim">No active effects</div>'}
               </div>
             </div>
             ${invHtml}
           `;
         } catch (e) {
           container.innerHTML = `
-            <button class="back-btn" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
-            <div class="page-header"><i class="fas fa-triangle-exclamation"></i>Error</div>
-            <div class="empty-state">Failed to load player detail: ${e.message}</div>
+            <button class="${ui.back}" onclick="backToPlayers()"><i class="fas fa-arrow-left"></i> Back to Players</button>
+            <div class="${ui.page}"><i class="fas fa-triangle-exclamation"></i>Error</div>
+            <div class="${ui.empty}">Failed to load player detail: ${e.message}</div>
           `;
         }
       }
@@ -905,26 +496,38 @@
           if (!Array.isArray(users)) throw new Error('Invalid users data');
 
           document.getElementById('page-users').innerHTML = `
-            <div class="page-header" style="justify-content:space-between">
-              <span><i class="fas fa-user-shield"></i> Users</span>
-              <button class="btn btn-primary btn-sm" onclick="document.getElementById('createUserModal').classList.add('active')"><i class="fas fa-plus"></i> Add User</button>
+            <div class="${ui.page} justify-between">
+              <span class="flex items-center gap-2"><i class="fas fa-user-shield"></i> Users</span>
+              <button class="${ui.btn} ${ui.btnPrimary}" onclick="openCreateUser()"><i class="fas fa-plus"></i> Add User</button>
             </div>
-            <div class="users-grid">
-              ${users.map(u => `<div class="user-card">
-                <div class="user-info">
-                  <div class="user-name">${escapeHtml(u.username)}</div>
-                  <div class="user-meta">Role: ${u.role} | Created: ${u.createdAt ? u.createdAt.split('T')[0] : 'N/A'} | Last login: ${u.lastLogin ? u.lastLogin.split('T')[0] : 'Never'}</div>
+            <div class="grid gap-1.5">
+              ${users.map(u => `<div class="${ui.userCard}">
+                <div class="flex flex-col gap-0.5">
+                  <div class="text-[13.5px] font-semibold">${escapeHtml(u.username)}</div>
+                  <div class="text-[11.5px] text-dim">Role: ${u.role} | Created: ${u.createdAt ? u.createdAt.split('T')[0] : 'N/A'} | Last login: ${u.lastLogin ? u.lastLogin.split('T')[0] : 'Never'}</div>
                 </div>
-                <div class="user-badges">
-                  ${u.role === 'admin' || u.role === 'owner' ? '<span class="badge badge-admin">admin</span>' : '<span class="badge badge-mod">mod</span>'}
-                  ${!u.enabled ? '<span class="badge badge-disabled">disabled</span>' : ''}
+                <div class="flex flex-wrap gap-1.5">
+                  ${u.role === 'admin' || u.role === 'owner' ? `<span class="${ui.badge} ${ui.badgeAdmin}">admin</span>` : `<span class="${ui.badge} ${ui.badgeMod}">mod</span>`}
+                  ${!u.enabled ? `<span class="${ui.badge} ${ui.badgeOff}">disabled</span>` : ''}
                 </div>
               </div>`).join('')}
             </div>
           `;
         } catch (e) {
-          document.getElementById('page-users').innerHTML = '<div class="page-header"><i class="fas fa-user-shield"></i>Users</div><div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Error loading users</div>';
+          document.getElementById('page-users').innerHTML = `<div class="${ui.page}"><i class="fas fa-user-shield"></i>Users</div><div class="${ui.empty}">Error loading users</div>`;
         }
+      }
+
+      function openCreateUser() {
+        const modal = document.getElementById('createUserModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      function closeCreateUser() {
+        const modal = document.getElementById('createUserModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
       }
 
       async function createUser() {
@@ -937,7 +540,7 @@
           body: JSON.stringify({ username, password, role })
         });
         if (res.ok) {
-          document.getElementById('createUserModal').classList.remove('active');
+          closeCreateUser();
           document.getElementById('newUsername').value = '';
           document.getElementById('newPassword').value = '';
           loadUsers();
@@ -955,19 +558,19 @@
           if (!Array.isArray(entries)) entries = [];
 
           document.getElementById('page-whitelist').innerHTML = `
-            <div class="page-header"><i class="fas fa-shield-halved"></i>IP Whitelist</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>IP Address</th><th>Added At</th></tr></thead>
+            <div class="${ui.page}"><i class="fas fa-shield-halved"></i>IP Whitelist</div>
+            <div class="${ui.tableWrap}">
+              <table class="${ui.table}">
+                <thead><tr><th class="${ui.th}">IP Address</th><th class="${ui.th}">Added At</th></tr></thead>
                 <tbody>
-                  ${entries.length === 0 ? '<tr><td colspan="2" style="color:var(--text-dim);text-align:center;padding:1rem"><i class="fas fa-shield-halved"></i> No entries</td></tr>' :
-                    entries.map(e => `<tr><td style="font-family:monospace">${e.ip}</td><td style="color:var(--text-dim)">${e.addedAt || 'N/A'}</td></tr>`).join('')}
+                  ${entries.length === 0 ? `<tr><td colspan="2" class="${ui.td} text-center text-dim"><i class="fas fa-shield-halved"></i> No entries</td></tr>` :
+                    entries.map(e => `<tr class="${ui.row}"><td class="${ui.td} font-mono">${e.ip}</td><td class="${ui.td} text-dim">${e.addedAt || 'N/A'}</td></tr>`).join('')}
                 </tbody>
               </table>
             </div>
           `;
         } catch (e) {
-          document.getElementById('page-whitelist').innerHTML = '<div class="page-header"><i class="fas fa-shield-halved"></i>IP Whitelist</div><div class="empty-state"><i class="fas fa-triangle-exclamation"></i>Error loading whitelist</div>';
+          document.getElementById('page-whitelist').innerHTML = `<div class="${ui.page}"><i class="fas fa-shield-halved"></i>IP Whitelist</div><div class="${ui.empty}">Error loading whitelist</div>`;
         }
       }
 

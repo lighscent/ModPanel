@@ -4,157 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ModPanel - Login</title>
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="stylesheet" href="../css/colors.css" />
-    <link rel="stylesheet" href="../css/index.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha384-nRgPTkuX86pH8yjPJUAFuASXQSSl2/bBUiNV47vSYpKFxHJhbcrGnmlYpYJMeD7a" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-      body {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 1.5rem;
-        background: var(--bg-base);
-      }
-      .login-box {
-        width: 100%;
-        max-width: 380px;
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 2rem;
-      }
-      .login-logo {
-        width: 40px;
-        height: 40px;
-        margin: 0 auto 1rem;
-        border-radius: 10px;
-        object-fit: cover;
-        display: block;
-      }
-      .login-title {
-        text-align: center;
-        color: var(--text-primary);
-        font-size: 1.25rem;
-        font-weight: 600;
-      }
-      .login-subtitle {
-        text-align: center;
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-        margin: 0.15rem 0 1.5rem;
-      }
-      .form-group { margin-bottom: 0.8rem; }
-      .form-group label {
-        display: block;
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-      }
-      .form-group input {
-        width: 100%;
-        padding: 0.6rem 0.75rem;
-        background: #23272d;
-        border: 1px solid var(--border-light);
-        border-radius: 4px;
-        color: var(--text-primary);
-        font: inherit;
-        font-size: 0.95rem;
-        transition: border-color 0.12s, box-shadow 0.12s;
-      }
-      .form-group input:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-glow);
-      }
-      .btn-login {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        width: 100%;
-        padding: 0.6rem;
-        margin-top: 0.35rem;
-        background: var(--accent);
-        color: #ffffff;
-        font: inherit;
-        font-size: 0.95rem;
-        font-weight: 600;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background 0.12s;
-      }
-      .btn-login:hover { background: var(--accent-dim); }
-      .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
-      .error-msg {
-        display: none;
-        margin-top: 0.8rem;
-        padding: 0.45rem 0.65rem;
-        background: rgba(217, 83, 79, 0.14);
-        border: 1px solid rgba(217, 83, 79, 0.35);
-        border-radius: 4px;
-        color: #f19b98;
-        font-size: 0.83rem;
-        text-align: center;
-      }
-      .error-msg.success {
-        background: rgba(76, 175, 106, 0.14);
-        border-color: rgba(76, 175, 106, 0.4);
-        color: #9fd8b4;
-      }
-      .loading-spinner {
-        display: none;
-        width: 15px;
-        height: 15px;
-        border: 2px solid rgba(255, 255, 255, 0.45);
-        border-top-color: #ffffff;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
+    <link rel="stylesheet" href="../css/app.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" referrerpolicy="no-referrer" />
   </head>
-  <body>
-    <div class="login-box">
-      <img class="login-logo" src="/img/modpanel_500px.png" alt="ModPanel" />
-      <div class="login-title">ModPanel</div>
-      <div class="login-subtitle">Moderation Control Panel</div>
+  <body class="flex min-h-screen items-center justify-center bg-bg p-6">
+    <div class="w-full max-w-[380px] rounded-md border border-line bg-panel p-8">
+      <div class="mx-auto mb-4 grid size-10 place-items-center rounded bg-accent text-white">
+        <i class="fas fa-cube"></i>
+      </div>
+      <div class="text-center text-[19px] font-semibold">ModPanel</div>
+      <div class="mb-6 mt-0.5 text-center text-[13px] text-dim">Moderation Control Panel</div>
       <form id="loginForm">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" autocomplete="username" required />
+        <div class="mb-3.5">
+          <label for="username" class="mb-1 block text-[13px] font-semibold text-dim">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required
+                 class="w-full rounded border border-[#4a525d] bg-[#23272d] px-3 py-2 text-[15px] text-ink outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/20" />
         </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        <div class="mb-3.5">
+          <label for="password" class="mb-1 block text-[13px] font-semibold text-dim">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required
+                 class="w-full rounded border border-[#4a525d] bg-[#23272d] px-3 py-2 text-[15px] text-ink outline-none transition focus:border-accent focus:ring-[3px] focus:ring-accent/20" />
         </div>
-        <button type="submit" class="btn-login" id="loginBtn">
+        <button type="submit" id="loginBtn"
+                class="mt-1.5 flex w-full items-center justify-center gap-2 rounded bg-accent py-2.5 text-[15px] font-semibold text-white transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-60">
           <span id="loginText">Sign In</span>
-          <div class="loading-spinner" id="spinner"></div>
+          <div id="spinner" style="display:none" class="size-4 animate-spin rounded-full border-2 border-white/45 border-t-white"></div>
         </button>
       </form>
-      <form id="changeForm" style="display:none">
-        <div class="form-group">
-          <label for="chgCurrent">Current password</label>
-          <input type="password" id="chgCurrent" autocomplete="current-password" required />
-        </div>
-        <div class="form-group">
-          <label for="chgNew">New password</label>
-          <input type="password" id="chgNew" autocomplete="new-password" required />
-        </div>
-        <div class="form-group">
-          <label for="chgConfirm">Confirm new password</label>
-          <input type="password" id="chgConfirm" autocomplete="new-password" required />
-        </div>
-        <button type="submit" class="btn-login" id="changeBtn">
-          <span id="changeText">Change password</span>
-          <div class="loading-spinner" id="chgSpinner"></div>
-        </button>
-      </form>
-      <div class="error-msg" id="errorMsg"></div>
+      <div id="errorMsg" style="display:none" class="mt-3 rounded border border-red-500/35 bg-red-500/15 px-2.5 py-2 text-center text-[13px] text-red-300"></div>
     </div>
     <script>
       const loginForm = document.getElementById('loginForm');
@@ -181,13 +58,11 @@
           });
           const data = await res.json();
 
-          if (res.status === 200 && data.username) {
+          if (res.status === 200 && data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            localStorage.setItem('role', data.role);
             window.location.href = '/dashboard';
-          } else if (res.status === 403 && data.mustChangePassword) {
-            loginForm.style.display = 'none';
-            document.getElementById('changeForm').style.display = 'block';
-            pendingUser = document.getElementById('username').value;
-            showError('You must change your password before signing in.');
           } else {
             showError(data.error || 'Login failed');
           }
@@ -202,62 +77,12 @@
 
       function showError(msg) {
         errorMsg.textContent = msg;
-        errorMsg.classList.remove('success');
         errorMsg.style.display = 'block';
       }
 
-      function showSuccess(msg) {
-        errorMsg.textContent = msg;
-        errorMsg.classList.add('success');
-        errorMsg.style.display = 'block';
+      if (localStorage.getItem('token')) {
+        window.location.href = '/dashboard';
       }
-
-      let pendingUser = '';
-      const changeForm = document.getElementById('changeForm');
-      const changeBtn = document.getElementById('changeBtn');
-      const changeText = document.getElementById('changeText');
-      const chgSpinner = document.getElementById('chgSpinner');
-
-      changeForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorMsg.style.display = 'none';
-        const current = document.getElementById('chgCurrent').value;
-        const next = document.getElementById('chgNew').value;
-        if (next !== document.getElementById('chgConfirm').value) {
-          showError('New passwords do not match');
-          return;
-        }
-        changeBtn.disabled = true;
-        changeText.style.display = 'none';
-        chgSpinner.style.display = 'block';
-
-        try {
-          const res = await fetch('/api/auth/password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: pendingUser, currentPassword: current, newPassword: next })
-          });
-          const data = await res.json();
-          if (res.status === 200) {
-            changeForm.style.display = 'none';
-            loginForm.style.display = 'block';
-            document.getElementById('password').value = '';
-            showSuccess('Password changed. Please sign in.');
-          } else {
-            showError(data.error || 'Password change failed');
-          }
-        } catch (err) {
-          showError('Connection error');
-        } finally {
-          changeBtn.disabled = false;
-          changeText.style.display = 'block';
-          chgSpinner.style.display = 'none';
-        }
-      });
-
-      fetch('/api/auth/session').then((r) => {
-        if (r.ok) window.location.href = '/dashboard';
-      }).catch(() => {});
     </script>
   </body>
 </html>

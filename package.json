@@ -1,0 +1,9 @@
+{
+  "name": "modpanel-ui",
+  "private": true,
+  "description": "Tailwind build for the ModPanel web panel",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.5",
+    "tailwindcss": "^4.3.5"
+  }
+}

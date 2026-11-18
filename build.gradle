@@ -34,6 +34,47 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
+def tailwindOutput = layout.buildDirectory.file('generated/tailwind/public/css/app.css')
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+
+tasks.register('npmInstall', Exec) {
+    workingDir = projectDir
+    commandLine(isWindows ? ['cmd', '/c', 'npm ci'] : ['npm', 'ci'])
+    inputs.files('package.json', 'package-lock.json')
+    outputs.dir('node_modules')
+}
+
+tasks.register('tailwindBuild', Exec) {
+    dependsOn 'npmInstall'
+    workingDir = projectDir
+    def tailwindArgs = ['@tailwindcss/cli', '-i', 'src/main/tailwind/input.css',
+                        '-o', tailwindOutput.get().asFile.absolutePath, '--minify']
+    commandLine(isWindows ? ['cmd', '/c', 'npx'] + tailwindArgs : ['npx'] + tailwindArgs)
+    inputs.dir('src/main/tailwind')
+    inputs.dir('src/main/resources/public')
+    inputs.files('package.json', 'package-lock.json')
+    outputs.file(tailwindOutput)
+    outputs.upToDateWhen { false }
+    ignoreExitValue = true
+    standardOutput = new ByteArrayOutputStream()
+    errorOutput = new ByteArrayOutputStream()
+    doLast {
+        def stdout = standardOutput.toString('UTF-8')
+        def stderr = errorOutput.toString('UTF-8')
+        if (stdout) { print(stdout) }
+        if (stderr) { System.err.print(stderr) }
+        def exitCode = executionResult.get().exitValue
+        if (exitCode != 0) {
+            throw new GradleException("tailwindcss failed with exit code ${exitCode}")
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir(layout.buildDirectory.dir('generated/tailwind'))
+tasks.named('processResources') {
+    dependsOn 'tailwindBuild'
+}
+
 tasks.named('jar') {
     enabled = false
 }
