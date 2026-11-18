@@ -167,6 +167,18 @@
         '/whitelist': 'whitelist'
       };
 
+      const PAGE_TITLES = {
+        dashboard: 'Dashboard',
+        players: 'Players',
+        users: 'Users',
+        whitelist: 'IP Whitelist'
+      };
+
+      function setTitle(page, detail) {
+        const label = PAGE_TITLES[page] || 'Dashboard';
+        document.title = detail ? `ModPanel - ${detail} | ${label}` : `ModPanel - ${label}`;
+      }
+
       document.querySelectorAll('.sidebar-item').forEach(el => {
         el.addEventListener('click', function() {
           navigate('/' + this.dataset.page);
@@ -194,6 +206,7 @@
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         document.getElementById('page-' + page).style.display = 'block';
         setActiveNav(page);
+        setTitle(page);
       }
 
       function showPlayerDetailPage(uuid, name) {
@@ -202,6 +215,7 @@
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         document.getElementById('page-player-detail').style.display = 'block';
         setActiveNav(null);
+        setTitle('players', name);
         loadPlayerDetail(uuid, name);
       }
 
@@ -210,6 +224,7 @@
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
         container.style.display = 'block';
         setActiveNav(null);
+        setTitle('players', name);
         container.innerHTML = `<div class="${ui.page}"><i class="fas fa-spinner fa-spin"></i>Loading...</div>`;
 
         try {
@@ -381,6 +396,7 @@
           const res = await apiFetch('/api/players/detail?uuid=' + uuid);
           const p = await res.json();
           if (!p || !p.name) throw new Error('Invalid response');
+          setTitle('players', p.displayName || p.name);
 
           const pingClass = p.ping > 150 ? ui.pingBad : p.ping > 80 ? ui.pingWarn : ui.pingGood;
 
