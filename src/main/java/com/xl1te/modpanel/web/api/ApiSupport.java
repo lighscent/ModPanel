@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import com.xl1te.modpanel.Main;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.GsonProvider;
+import com.xl1te.modpanel.web.auth.SessionManager.Session;
 import io.javalin.http.Context;
 
 import java.lang.reflect.Type;
@@ -116,6 +117,17 @@ public class ApiSupport {
         } catch (Exception e) {
             return 20.0;
         }
+    }
+
+    /** Contrôle sur le snapshot de session (rôle, permissions) : 0 requête DB. */
+    public static boolean hasPermission(Session session, String permission) {
+        if (!session.enabled()) {
+            return false;
+        }
+        if (session.role().equals("admin") || session.role().equals("owner")) {
+            return true;
+        }
+        return session.permissions().contains(permission);
     }
 
     public static void error(Context ctx, int status, String message) {

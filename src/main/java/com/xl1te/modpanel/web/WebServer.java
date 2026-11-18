@@ -6,6 +6,9 @@ import com.xl1te.modpanel.web.auth.ConnectionLimiter;
 import com.xl1te.modpanel.web.auth.IPWhitelist;
 import com.xl1te.modpanel.web.auth.SessionManager;
 import com.xl1te.modpanel.web.api.ApiController;
+import com.xl1te.modpanel.web.api.ApiSupport;
+import com.xl1te.modpanel.web.api.LiveApi;
+import com.xl1te.modpanel.web.api.LiveHub;
 import io.javalin.Javalin;
 import io.javalin.config.RoutesConfig;
 import io.javalin.http.staticfiles.Location;
@@ -16,11 +19,17 @@ public class WebServer {
     private final BestLogger logger;
     private Javalin app;
     private SessionManager sessionManager;
+    private final LiveHub liveHub;
 
     public WebServer(Main plugin, BestLogger logger) {
         this.plugin = plugin;
         this.logger = logger;
         this.sessionManager = new SessionManager();
+        this.liveHub = new LiveHub(plugin, new ApiSupport(plugin, logger));
+    }
+
+    public LiveHub getLiveHub() {
+        return liveHub;
     }
 
     public void startWebServer() {
@@ -42,8 +51,11 @@ public class WebServer {
                     plugin.getConfig().getBoolean("ip-whitelist-enabled", true),
                     plugin.getConfig().getStringList("ip-whitelist"));
             ApiController apiController = new ApiController(plugin, sessionManager, logger, proxyMode);
+            LiveApi liveApi = new LiveApi(sessionManager, liveHub, logger);
 
             sessionManager.start();
+            liveHub.reset();
+            liveHub.startHeartbeat();
 
             app = Javalin.create(config -> {
                 config.staticFiles.add(staticFileConfig -> {
@@ -102,6 +114,13 @@ public class WebServer {
                 });
 
                 apiController.registerApiRoutes(routes);
+
+                routes.wsBeforeUpgrade("/api/live", whitelist::handle);
+                routes.ws("/api/live", ws -> {
+                    ws.onConnect(liveApi::handleConnect);
+                    ws.onClose(liveApi::handleClose);
+                    ws.onError(liveApi::handleError);
+                });
             });
 
             app.start(port);
@@ -121,6 +140,7 @@ public class WebServer {
 
     public void stopWebServer() {
         sessionManager.stop();
+        liveHub.closeAll();
         if (app != null) {
             app.stop();
             app = null;

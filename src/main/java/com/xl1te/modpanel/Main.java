@@ -4,6 +4,7 @@ import com.xl1te.modpanel.commands.MPCommand;
 import com.xl1te.modpanel.config.PluginConfig;
 import com.xl1te.modpanel.database.DatabaseManager;
 import com.xl1te.modpanel.discord.DiscordBot;
+import com.xl1te.modpanel.listeners.PlayerLiveListener;
 import com.xl1te.modpanel.utils.BestLogger;
 import com.xl1te.modpanel.utils.VersionCheck;
 import com.xl1te.modpanel.web.WebServer;
@@ -56,6 +57,9 @@ public class Main extends JavaPlugin {
 
             this.webServer = new WebServer(this, bestLogger);
             this.webServer.startWebServer();
+
+            getServer().getPluginManager().registerEvents(
+                    new PlayerLiveListener(this, webServer.getLiveHub()), this);
 
             this.discordBot = new DiscordBot(this, bestLogger, asyncExecutor);
             this.discordBot.startBot();
